@@ -625,15 +625,57 @@
             <span class="toggle-track"></span>
           </label>
         </div>
-        <div id="cot-options" style="display:none">
-          <label>CoT style</label>
-          <select id="cot-style" onchange="updatePreview()">
-            <option value="think-step">Think step by step before answering</option>
-            <option value="scratchpad">Use a scratchpad, then provide final answer</option>
-            <option value="reasoning-tags">Show reasoning in &lt;thinking&gt; tags (Claude)</option>
-            <option value="lets-think">Let's think about this carefully...</option>
-            <option value="first-principles">Break this down from first principles</option>
-          </select>
+        <div id="cot-options" style="display:none;flex-direction:column;gap:14px;">
+          <div>
+            <label>Built-in CoT style</label>
+            <select id="cot-style" onchange="onCotStyleChange()">
+              <option value="think-step">Think step by step before answering</option>
+              <option value="scratchpad">Use a scratchpad, then provide final answer</option>
+              <option value="reasoning-tags">Show reasoning in &lt;thinking&gt; tags (Claude)</option>
+              <option value="lets-think">Let's think about this carefully...</option>
+              <option value="first-principles">Break this down from first principles</option>
+              <option value="custom">Custom (write your own)</option>
+            </select>
+          </div>
+
+          <div id="cot-custom-row" style="display:none">
+            <label>Custom CoT instruction</label>
+            <textarea id="cot-custom" placeholder="e.g. Before answering, list your assumptions, then reason through each one..." rows="3" oninput="updatePreview()"></textarea>
+          </div>
+
+          <div>
+            <label>Reasoning rules <span style="color:var(--muted);font-weight:400;">(applied inside the thinking phase)</span></label>
+            <div class="rule-list" id="cot-rules"></div>
+            <button class="add-btn" onclick="addCotRule()">+ Add reasoning rule</button>
+          </div>
+
+          <div>
+            <label>Reasoning constraints <span style="color:var(--muted);font-weight:400;">(things to avoid while reasoning)</span></label>
+            <div class="rule-list" id="cot-constraints"></div>
+            <button class="add-btn" onclick="addCotConstraint()">+ Add reasoning constraint</button>
+          </div>
+
+          <div>
+            <label>Required reasoning steps</label>
+            <div class="tag-picker" id="cot-steps">
+              <span class="tag" onclick="toggleTag(this)">Restate the problem</span>
+              <span class="tag" onclick="toggleTag(this)">Identify assumptions</span>
+              <span class="tag" onclick="toggleTag(this)">List unknowns</span>
+              <span class="tag" onclick="toggleTag(this)">Consider edge cases</span>
+              <span class="tag" onclick="toggleTag(this)">Evaluate alternatives</span>
+              <span class="tag" onclick="toggleTag(this)">Check for contradictions</span>
+              <span class="tag" onclick="toggleTag(this)">Estimate confidence</span>
+              <span class="tag" onclick="toggleTag(this)">Cite sources / evidence</span>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <span class="toggle-label" style="font-size:0.82rem;">Separate reasoning from final answer</span>
+            <label class="toggle">
+              <input type="checkbox" id="cot-separate" onchange="updatePreview()">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -809,9 +851,39 @@ function addFewShot() {
 
 // ─── CoT toggle ──────────────────────────────────────────────────────────────
 document.getElementById('cot-enabled').addEventListener('change', function() {
-  document.getElementById('cot-options').style.display = this.checked ? '' : 'none';
+  document.getElementById('cot-options').style.display = this.checked ? 'flex' : 'none';
   updatePreview();
 });
+
+function onCotStyleChange() {
+  const v = document.getElementById('cot-style').value;
+  document.getElementById('cot-custom-row').style.display = v === 'custom' ? '' : 'none';
+  updatePreview();
+}
+
+let cotRuleCounter = 0, cotConstraintCounter = 0;
+
+function addCotRule() {
+  const id = `cotr-${cotRuleCounter++}`;
+  const item = document.createElement('div');
+  item.className = 'rule-item';
+  item.id = id;
+  item.innerHTML = `<input type="text" placeholder="e.g. Always verify numerical claims before concluding" oninput="updatePreview()"><button class="remove-btn" onclick="removeItem('${id}')">×</button>`;
+  document.getElementById('cot-rules').appendChild(item);
+  item.querySelector('input').focus();
+  updatePreview();
+}
+
+function addCotConstraint() {
+  const id = `cotc-${cotConstraintCounter++}`;
+  const item = document.createElement('div');
+  item.className = 'rule-item';
+  item.id = id;
+  item.innerHTML = `<input type="text" placeholder="e.g. Do not jump to conclusions without evidence" oninput="updatePreview()"><button class="remove-btn" onclick="removeItem('${id}')">×</button>`;
+  document.getElementById('cot-constraints').appendChild(item);
+  item.querySelector('input').focus();
+  updatePreview();
+}
 
 // ─── Fallback ────────────────────────────────────────────────────────────────
 document.getElementById('fallback-type').addEventListener('change', function() {
@@ -921,14 +993,30 @@ function buildPrompt() {
   const cotEnabled = document.getElementById('cot-enabled').checked;
   if (cotEnabled) {
     const cotStyle = document.getElementById('cot-style').value;
+    const cotCustom = document.getElementById('cot-custom').value.trim();
     const cotMap = {
       'think-step': 'Think step by step before providing your final answer.',
       'scratchpad': 'First use a scratchpad to work through your reasoning, then provide your final answer clearly labeled.',
-      'reasoning-tags': useXml ? '<thinking>\n[Work through your reasoning here before responding]\n</thinking>' : 'First reason through the problem internally, then provide your answer.',
+      'reasoning-tags': 'Show all reasoning inside <thinking> tags before your final response.',
       'lets-think': "Let's think about this carefully and methodically before arriving at an answer.",
-      'first-principles': 'Break this down from first principles. Identify core assumptions, reason step by step, and derive your answer logically.'
+      'first-principles': 'Break this down from first principles. Identify core assumptions, reason step by step, and derive your answer logically.',
+      'custom': cotCustom
     };
-    lines.push(useXml ? wrap('thinking_instruction', cotMap[cotStyle] || cotMap['think-step']) : `REASONING:\n${cotMap[cotStyle] || cotMap['think-step']}`);
+    const baseInstruction = cotMap[cotStyle] || cotMap['think-step'];
+
+    const cotRules = [...document.getElementById('cot-rules').querySelectorAll('input')].map(i => i.value.trim()).filter(Boolean);
+    const cotConstraints = [...document.getElementById('cot-constraints').querySelectorAll('input')].map(i => i.value.trim()).filter(Boolean);
+    const requiredSteps = [...document.getElementById('cot-steps').querySelectorAll('.tag.active')].map(t => t.textContent.trim());
+    const separate = document.getElementById('cot-separate').checked;
+
+    const cotParts = [baseInstruction];
+    if (requiredSteps.length) cotParts.push(`\nYour reasoning must include these steps:\n${requiredSteps.map(s => `• ${s}`).join('\n')}`);
+    if (cotRules.length) cotParts.push(`\nReasoning rules:\n${cotRules.map(r => `• ${r}`).join('\n')}`);
+    if (cotConstraints.length) cotParts.push(`\nReasoning constraints:\n${cotConstraints.map(c => `• Do not: ${c}`).join('\n')}`);
+    if (separate) cotParts.push(`\nClearly separate your reasoning from your final answer using a divider or label (e.g. "Final Answer:").`);
+
+    const cotContent = cotParts.join('');
+    lines.push(useXml ? wrap('thinking_instruction', cotContent) : `REASONING PROCESS:\n${cotContent}`);
     lines.push('');
   }
 
