@@ -344,6 +344,101 @@
     .layout { grid-template-columns: 1fr; height: auto; }
     .preview-panel { height: 400px; border-left: none; border-top: 1px solid var(--border); }
   }
+
+  /* ── Header action area ── */
+  .header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .autosave-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--success); opacity: 0;
+    transition: opacity 0.4s;
+    flex-shrink: 0;
+  }
+  .autosave-dot.visible { opacity: 1; }
+
+  /* ── Modal overlay ── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 520px;
+    max-width: 94vw;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  }
+  .modal-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .modal-close {
+    background: none; border: none; color: var(--muted);
+    font-size: 1.3rem; cursor: pointer; line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+  .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* ── Saved prompt list ── */
+  .saved-list { display: flex; flex-direction: column; gap: 8px; }
+  .saved-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .saved-item:hover { border-color: var(--accent); }
+  .saved-item-info { flex: 1; min-width: 0; }
+  .saved-item-name { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .saved-item-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .saved-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); padding: 4px; border-radius: 5px;
+    transition: color 0.15s, background 0.15s; font-size: 0.8rem;
+  }
+  .icon-btn:hover { color: var(--text); background: var(--surface2); }
+  .icon-btn.danger:hover { color: var(--danger); background: rgba(248,113,113,0.1); }
+
+  .empty-state {
+    text-align: center; padding: 32px 16px;
+    color: var(--muted); font-size: 0.85rem; line-height: 1.7;
+  }
+  .empty-state span { font-size: 2rem; display: block; margin-bottom: 10px; }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: rgba(108,99,255,0.05); color: var(--accent2); }
+  .upload-zone strong { display: block; color: var(--text); margin-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -354,7 +449,84 @@
   </svg>
   <h1>AI Prompt Builder</h1>
   <span>v1.0</span>
+  <div class="header-actions">
+    <div class="autosave-dot" id="autosave-dot" title="Auto-saved"></div>
+    <button class="btn btn-ghost" onclick="openUploadModal()" title="Upload prompt file">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Upload
+    </button>
+    <button class="btn btn-ghost" onclick="openSavedModal()" title="Saved prompts">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Saved
+    </button>
+    <button class="btn btn-secondary" onclick="savePromptAs()" title="Save current prompt">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save
+    </button>
+    <button class="btn btn-ghost" onclick="exportJSON()" title="Export as .json file">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+  </div>
+  <input type="file" id="file-upload-input" accept=".json" style="display:none" onchange="handleFileUpload(event)">
 </header>
+
+<!-- ======= SAVED PROMPTS MODAL ======= -->
+<div class="modal-overlay" id="saved-modal" onclick="if(event.target===this)closeSavedModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span>Saved Prompts</span>
+      <button class="modal-close" onclick="closeSavedModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="saved-list-container"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSavedModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======= UPLOAD MODAL ======= -->
+<div class="modal-overlay" id="upload-modal" onclick="if(event.target===this)closeUploadModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span>Upload Prompt File</span>
+      <button class="modal-close" onclick="closeUploadModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" id="upload-zone"
+           onclick="document.getElementById('file-upload-input').click()"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <strong>Click to choose a file, or drag & drop here</strong>
+        Accepts .json files exported from this app
+      </div>
+      <div id="upload-error" style="display:none;color:var(--danger);font-size:0.82rem;padding:8px 0;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeUploadModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======= SAVE-NAME MODAL ======= -->
+<div class="modal-overlay" id="savename-modal" onclick="if(event.target===this)closeSaveNameModal()">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <span>Save Prompt</span>
+      <button class="modal-close" onclick="closeSaveNameModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <label>Prompt name</label>
+      <input type="text" id="save-name-input" placeholder="e.g. Customer Support Bot v2" style="margin-top:6px"
+             onkeydown="if(event.key==='Enter')confirmSave()">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSaveNameModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSave()">Save</button>
+    </div>
+  </div>
+</div>
 
 <div class="layout">
   <!-- ======= EDITOR ======= -->
@@ -1042,36 +1214,321 @@ function buildPrompt() {
 }
 
 // ─── Update preview ───────────────────────────────────────────────────────────
+let autosaveTimer = null;
 function updatePreview() {
   const prompt = buildPrompt();
   document.getElementById('prompt-output').textContent = prompt;
   document.getElementById('char-count').textContent = prompt.length.toLocaleString();
   document.getElementById('token-count').textContent = Math.round(prompt.length / 4).toLocaleString();
+  scheduleAutosave();
 }
 
 // ─── Copy ─────────────────────────────────────────────────────────────────────
 function copyPrompt() {
-  const text = document.getElementById('prompt-output').textContent;
-  navigator.clipboard.writeText(text).then(() => {
+  navigator.clipboard.writeText(document.getElementById('prompt-output').textContent).then(() => {
     const fb = document.getElementById('copy-feedback');
     fb.classList.add('show');
     setTimeout(() => fb.classList.remove('show'), 2000);
   });
 }
 
-// ─── Download ─────────────────────────────────────────────────────────────────
+// ─── Download .txt ────────────────────────────────────────────────────────────
 function downloadPrompt() {
   const text = document.getElementById('prompt-output').textContent;
-  const blob = new Blob([text], { type: 'text/plain' });
+  triggerDownload(new Blob([text], { type: 'text/plain' }), 'prompt.txt');
+}
+
+function triggerDownload(blob, filename) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'prompt.txt';
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
 }
 
+// ─── State capture / restore ─────────────────────────────────────────────────
+function captureState() {
+  const get = id => document.getElementById(id);
+  const getRules = listId => [...get(listId).querySelectorAll('input')].map(i => i.value);
+  const getShots = () => [...get('few-shot-list').querySelectorAll('.few-shot-pair')].map(pair => {
+    const [a, b] = pair.querySelectorAll('textarea');
+    return { input: a.value, output: b.value };
+  });
+  const getActiveTags = containerId => [...get(containerId).querySelectorAll('.tag.active')].map(t => t.textContent.trim());
+
+  return {
+    version: 1,
+    model: get('target-model').value,
+    role: get('role-custom').value,
+    ctx: { company: get('ctx-company').value, domain: get('ctx-domain').value, audience: get('ctx-audience').value, extra: get('ctx-extra').value },
+    objective: { type: get('obj-type').value, description: get('obj-description').value },
+    positiveRules: getRules('positive-rules'),
+    negativeRules: getRules('negative-rules'),
+    tone: { formality: get('tone-formality').value, detail: get('tone-detail').value, energy: get('tone-energy').value, tags: getActiveTags('tone-tags') },
+    format: { type: get('fmt-type').value, length: get('fmt-length').value, template: get('fmt-template').value },
+    fewShots: getShots(),
+    cot: { enabled: get('cot-enabled').checked, style: get('cot-style').value, custom: get('cot-custom').value, rules: getRules('cot-rules'), constraints: getRules('cot-constraints'), steps: getActiveTags('cot-steps'), separate: get('cot-separate').checked },
+    fallback: { type: get('fallback-type').value, custom: get('fallback-custom').value },
+  };
+}
+
+function restoreState(state) {
+  if (!state || state.version !== 1) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; };
+  const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+  set('target-model', state.model); onModelChange();
+  set('role-custom', state.role);
+  // clear preset highlights
+  document.querySelectorAll('#s-role .preset-btn').forEach(b => b.classList.remove('active'));
+
+  set('ctx-company', state.ctx?.company);
+  set('ctx-domain', state.ctx?.domain);
+  set('ctx-audience', state.ctx?.audience);
+  set('ctx-extra', state.ctx?.extra);
+
+  set('obj-type', state.objective?.type);
+  set('obj-description', state.objective?.description);
+
+  // Rules
+  const rebuildRules = (listId, prefix, values, placeholder) => {
+    const container = document.getElementById(listId);
+    container.innerHTML = '';
+    ruleCounters[prefix] = 0;
+    (values || []).forEach(val => {
+      const id = `${prefix}-${ruleCounters[prefix]++}`;
+      const item = document.createElement('div');
+      item.className = 'rule-item'; item.id = id;
+      item.innerHTML = `<input type="text" placeholder="${placeholder}" oninput="updatePreview()"><button class="remove-btn" onclick="removeItem('${id}')">×</button>`;
+      container.appendChild(item);
+      item.querySelector('input').value = val;
+    });
+  };
+  rebuildRules('positive-rules', 'pos', state.positiveRules, 'Enter rule...');
+  rebuildRules('negative-rules', 'neg', state.negativeRules, 'Enter constraint...');
+
+  // Tone sliders
+  const t = state.tone || {};
+  ['formality', 'detail', 'energy'].forEach(k => {
+    const el = document.getElementById(`tone-${k}`);
+    if (el && t[k] != null) { el.value = t[k]; onSlider(el); }
+  });
+  document.querySelectorAll('#tone-tags .tag').forEach(tag => {
+    tag.classList.toggle('active', (t.tags || []).includes(tag.textContent.trim()));
+  });
+
+  // Format
+  set('fmt-type', state.format?.type); onFormatChange();
+  set('fmt-length', state.format?.length);
+  set('fmt-template', state.format?.template);
+
+  // Few-shot
+  document.getElementById('few-shot-list').innerHTML = '';
+  shotCounter = 0;
+  (state.fewShots || []).forEach(shot => {
+    addFewShot();
+    const pairs = document.getElementById('few-shot-list').querySelectorAll('.few-shot-pair');
+    const last = pairs[pairs.length - 1];
+    const [a, b] = last.querySelectorAll('textarea');
+    a.value = shot.input; b.value = shot.output;
+  });
+
+  // CoT
+  const cot = state.cot || {};
+  setCheck('cot-enabled', cot.enabled);
+  document.getElementById('cot-options').style.display = cot.enabled ? 'flex' : 'none';
+  set('cot-style', cot.style); onCotStyleChange();
+  set('cot-custom', cot.custom);
+
+  const rebuildCotList = (listId, counter, values, placeholder, addFn) => {
+    document.getElementById(listId).innerHTML = '';
+    (values || []).forEach(val => {
+      addFn();
+      const inputs = document.getElementById(listId).querySelectorAll('input');
+      inputs[inputs.length - 1].value = val;
+    });
+  };
+  cotRuleCounter = 0; cotConstraintCounter = 0;
+  rebuildCotList('cot-rules', 'cotRuleCounter', cot.rules, '', addCotRule);
+  rebuildCotList('cot-constraints', 'cotConstraintCounter', cot.constraints, '', addCotConstraint);
+
+  document.querySelectorAll('#cot-steps .tag').forEach(tag => {
+    tag.classList.toggle('active', (cot.steps || []).includes(tag.textContent.trim()));
+  });
+  setCheck('cot-separate', cot.separate);
+
+  // Fallback
+  set('fallback-type', state.fallback?.type);
+  document.getElementById('fallback-custom-row').style.display = state.fallback?.type === 'custom' ? '' : 'none';
+  set('fallback-custom', state.fallback?.custom);
+
+  updatePreview();
+}
+
+// ─── Auto-save to localStorage ────────────────────────────────────────────────
+const AUTOSAVE_KEY = 'promptbuilder_autosave';
+const SAVES_KEY = 'promptbuilder_saves';
+
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(captureState()));
+      const dot = document.getElementById('autosave-dot');
+      dot.classList.add('visible');
+      setTimeout(() => dot.classList.remove('visible'), 1400);
+    } catch(e) {}
+  }, 800);
+}
+
+function loadAutosave() {
+  try {
+    const raw = localStorage.getItem(AUTOSAVE_KEY);
+    if (raw) restoreState(JSON.parse(raw));
+  } catch(e) {}
+}
+
+// ─── Named saves ─────────────────────────────────────────────────────────────
+function getSaves() {
+  try { return JSON.parse(localStorage.getItem(SAVES_KEY)) || []; } catch(e) { return []; }
+}
+function setSaves(saves) {
+  localStorage.setItem(SAVES_KEY, JSON.stringify(saves));
+}
+
+function savePromptAs() {
+  document.getElementById('save-name-input').value = '';
+  document.getElementById('savename-modal').classList.add('open');
+  setTimeout(() => document.getElementById('save-name-input').focus(), 80);
+}
+function closeSaveNameModal() { document.getElementById('savename-modal').classList.remove('open'); }
+
+function confirmSave() {
+  const name = document.getElementById('save-name-input').value.trim();
+  if (!name) { document.getElementById('save-name-input').focus(); return; }
+  const saves = getSaves();
+  const existing = saves.findIndex(s => s.name === name);
+  const entry = { name, savedAt: new Date().toISOString(), state: captureState() };
+  if (existing >= 0) saves[existing] = entry; else saves.unshift(entry);
+  setSaves(saves);
+  closeSaveNameModal();
+  showToast(`"${name}" saved`);
+}
+
+function deleteSave(name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  setSaves(getSaves().filter(s => s.name !== name));
+  renderSavedList();
+}
+
+function loadSave(name) {
+  const save = getSaves().find(s => s.name === name);
+  if (save) { restoreState(save.state); closeSavedModal(); showToast(`Loaded "${name}"`); }
+}
+
+function exportSaveAsJSON(name) {
+  const save = getSaves().find(s => s.name === name);
+  if (!save) return;
+  const blob = new Blob([JSON.stringify(save.state, null, 2)], { type: 'application/json' });
+  triggerDownload(blob, `${name.replace(/\s+/g, '_')}.json`);
+}
+
+function openSavedModal() {
+  renderSavedList();
+  document.getElementById('saved-modal').classList.add('open');
+}
+function closeSavedModal() { document.getElementById('saved-modal').classList.remove('open'); }
+
+function renderSavedList() {
+  const saves = getSaves();
+  const container = document.getElementById('saved-list-container');
+  if (!saves.length) {
+    container.innerHTML = `<div class="empty-state"><span>💾</span>No saved prompts yet.<br>Click <strong>Save</strong> in the header to save the current prompt.</div>`;
+    return;
+  }
+  container.innerHTML = `<div class="saved-list">${saves.map(s => {
+    const date = new Date(s.savedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    const model = s.state?.model || 'generic';
+    return `<div class="saved-item">
+      <div class="saved-item-info" onclick="loadSave('${esc(s.name)}')">
+        <div class="saved-item-name">${esc(s.name)}</div>
+        <div class="saved-item-meta">${date} · ${model}</div>
+      </div>
+      <div class="saved-item-actions">
+        <button class="icon-btn" title="Load" onclick="loadSave('${esc(s.name)}')">↩</button>
+        <button class="icon-btn" title="Export .json" onclick="exportSaveAsJSON('${esc(s.name)}')">⬇</button>
+        <button class="icon-btn danger" title="Delete" onclick="deleteSave('${esc(s.name)}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function esc(str) { return str.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+// ─── Upload ───────────────────────────────────────────────────────────────────
+function openUploadModal() { document.getElementById('upload-modal').classList.add('open'); }
+function closeUploadModal() { document.getElementById('upload-modal').classList.remove('open'); document.getElementById('upload-error').style.display = 'none'; }
+
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (file) readUploadedFile(file);
+  event.target.value = '';
+}
+
+function readUploadedFile(file) {
+  if (!file.name.endsWith('.json')) { showUploadError('Only .json files are supported.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const state = JSON.parse(e.target.result);
+      if (state.version !== 1) throw new Error('Unrecognized file format.');
+      restoreState(state);
+      closeUploadModal();
+      showToast('Prompt loaded from file');
+    } catch(err) {
+      showUploadError('Invalid file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showUploadError(msg) {
+  const el = document.getElementById('upload-error');
+  el.textContent = msg; el.style.display = '';
+}
+
+function onDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+function onDragLeave(e) { document.getElementById('upload-zone').classList.remove('drag-over'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) readUploadedFile(file);
+}
+
+// ─── Export current state as JSON ─────────────────────────────────────────────
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(captureState(), null, 2)], { type: 'application/json' });
+  triggerDownload(blob, 'prompt.json');
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1d27;border:1px solid #2e3250;color:#e2e8f0;padding:10px 20px;border-radius:99px;font-size:0.83rem;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);transition:opacity 0.3s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg; toast.style.opacity = '1';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.style.opacity = '0', 2200);
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
-updatePreview();
+loadAutosave();
+if (!localStorage.getItem(AUTOSAVE_KEY)) updatePreview();
 </script>
 </body>
 </html>
