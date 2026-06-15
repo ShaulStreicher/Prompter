@@ -729,7 +729,7 @@ function renderMain() {
     summaryHtml += `</div>`;
   }
 
-  main.innerHTML = summaryHtml + activeHtml;
+  main.innerHTML = activeHtml + summaryHtml;
 
   // Bind active step events
   step.bind();
@@ -904,14 +904,20 @@ function updatePreview() {
 }
 
 function syntaxHighlight(text) {
-  // Escape HTML first, then colorize XML tags
   const escaped = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  return escaped
-    .replace(/(&lt;\/?[\w_]+&gt;)/g, '<span class="xml-tag">$1</span>');
+  // Colorize line by line: tag lines orange, content lines cream
+  return escaped.split('\n').map(line => {
+    if (/^&lt;\/?[\w_]+&gt;$/.test(line.trim())) {
+      return `<span class="xml-tag">${line}</span>`;
+    } else if (line.trim()) {
+      return `<span class="xml-content">${line}</span>`;
+    }
+    return line;
+  }).join('\n');
 }
 
 // ─── Header subtitle ─────────────────────────────────────────────────────────
