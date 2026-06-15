@@ -1,42 +1,42 @@
 // ─── Constants ────────────────────────────────────────────────────────────────
 const AUTOSAVE_KEY = 'promptbuilder_autosave';
-const SAVES_KEY = 'promptbuilder_saves';
+const SAVES_KEY    = 'promptbuilder_saves';
 
 const TASK_TYPES = [
-  { value: 'analyze', label: 'Analyze / Evaluate' },
+  { value: 'analyze',   label: 'Analyze / Evaluate' },
   { value: 'summarize', label: 'Summarize' },
-  { value: 'generate', label: 'Generate / Create' },
-  { value: 'rewrite', label: 'Rewrite / Edit' },
-  { value: 'classify', label: 'Classify / Categorize' },
-  { value: 'extract', label: 'Extract information' },
-  { value: 'answer', label: 'Answer Q&A' },
-  { value: 'brainstorm', label: 'Brainstorm ideas' },
+  { value: 'generate',  label: 'Generate / Create' },
+  { value: 'rewrite',   label: 'Rewrite / Edit' },
+  { value: 'classify',  label: 'Classify / Categorize' },
+  { value: 'extract',   label: 'Extract information' },
+  { value: 'answer',    label: 'Answer Q&A' },
+  { value: 'brainstorm',label: 'Brainstorm ideas' },
   { value: 'translate', label: 'Translate' },
-  { value: 'code', label: 'Write / Review code' },
-  { value: 'plan', label: 'Plan / Outline' },
-  { value: 'custom', label: 'Custom' },
+  { value: 'code',      label: 'Write / Review code' },
+  { value: 'plan',      label: 'Plan / Outline' },
+  { value: 'custom',    label: 'Custom' },
 ];
 
 const TASK_STARTERS = {
-  analyze: 'Analyze the following and provide a structured evaluation with strengths, weaknesses, and recommendations.',
+  analyze:   'Analyze the following and provide a structured evaluation with strengths, weaknesses, and recommendations.',
   summarize: 'Summarize the provided content into key points, preserving all critical information.',
-  generate: 'Generate a high-quality, original piece of content based on the specifications provided.',
-  rewrite: 'Rewrite the following content to improve clarity, tone, and engagement while preserving the original meaning.',
-  classify: 'Classify the input into the appropriate category and explain your reasoning.',
-  extract: 'Extract the following specific information from the provided text.',
-  answer: "Answer the user's questions accurately and concisely, citing your reasoning.",
-  brainstorm: 'Generate a diverse list of creative ideas. Include unconventional and innovative approaches.',
+  generate:  'Generate a high-quality, original piece of content based on the specifications provided.',
+  rewrite:   'Rewrite the following content to improve clarity, tone, and engagement while preserving the original meaning.',
+  classify:  'Classify the input into the appropriate category and explain your reasoning.',
+  extract:   'Extract the following specific information from the provided text.',
+  answer:    "Answer the user's questions accurately and concisely, citing your reasoning.",
+  brainstorm:'Generate a diverse list of creative ideas. Include unconventional and innovative approaches.',
   translate: 'Translate the provided content accurately while preserving tone and nuance.',
-  code: 'Write clean, well-documented, production-ready code that fulfills the given requirements.',
-  plan: 'Create a detailed, actionable plan or outline with clear milestones and steps.',
+  code:      'Write clean, well-documented, production-ready code that fulfills the given requirements.',
+  plan:      'Create a detailed, actionable plan or outline with clear milestones and steps.',
 };
 
 const MODEL_HINTS = {
-  claude: 'Claude best practices: use XML tags like &lt;context&gt;, &lt;instructions&gt;, &lt;examples&gt;. Be direct. Use system prompt for role, human turn for task. Avoid filler phrases.',
-  gpt: 'GPT best practices: use clear delimiters like ### or """. System message for role & rules. Be explicit about format. Markdown renders in ChatGPT UI.',
-  gemini: 'Gemini best practices: clear instruction at the top. Use structured format with headers. Gemini responds well to examples and step-by-step breakdowns.',
-  llama: 'Llama best practices: use [INST] ... [/INST] format (Llama 2) or &lt;|system|&gt; tags (Llama 3). Keep system prompt focused and concise.',
-  mistral: 'Mistral best practices: similar to Llama. Use clear delimiters. Mistral models are instruction-tuned; be direct with your task description.',
+  claude:  'Claude best practices: use XML tags like &lt;context&gt;, &lt;instructions&gt;, &lt;examples&gt;. Be direct. Use system prompt for role, human turn for task.',
+  gpt:     'GPT best practices: use clear delimiters like ### or """. System message for role &amp; rules. Be explicit about format.',
+  gemini:  'Gemini best practices: clear instruction at the top. Use structured headers. Gemini responds well to step-by-step breakdowns.',
+  llama:   'Llama best practices: use [INST] ... [/INST] (Llama 2) or &lt;|system|&gt; tags (Llama 3). Keep system prompt focused.',
+  mistral: 'Mistral best practices: similar to Llama. Use clear delimiters. Be direct with your task description.',
   generic: 'Generic prompt: structure your prompt with clearly labeled sections. Works across most instruction-tuned models.',
 };
 
@@ -47,107 +47,136 @@ const MODEL_LABELS = {
 
 const ROLE_PRESETS = [
   { label: 'Software Engineer', value: 'You are an expert software engineer with deep knowledge of modern web development, system design, and best practices.' },
-  { label: 'Data Scientist', value: 'You are a senior data scientist and machine learning expert with expertise in statistics, Python, and ML frameworks.' },
-  { label: 'Copywriter', value: 'You are a professional copywriter and content strategist specializing in persuasive, SEO-optimized content.' },
-  { label: 'Product Manager', value: 'You are an expert product manager with experience at top tech companies, skilled in roadmapping, user research, and stakeholder communication.' },
+  { label: 'Data Scientist',    value: 'You are a senior data scientist and machine learning expert with expertise in statistics, Python, and ML frameworks.' },
+  { label: 'Copywriter',        value: 'You are a professional copywriter and content strategist specializing in persuasive, SEO-optimized content.' },
+  { label: 'Product Manager',   value: 'You are an expert product manager with experience at top tech companies, skilled in roadmapping, user research, and stakeholder communication.' },
   { label: 'Financial Analyst', value: 'You are a seasoned financial analyst with expertise in valuation, financial modeling, and investment analysis.' },
-  { label: 'Legal Assistant', value: 'You are an expert legal assistant with broad knowledge of contract law, compliance, and regulatory frameworks.' },
-  { label: 'Creative Writer', value: 'You are a creative writing coach and storytelling expert who helps craft compelling narratives and characters.' },
-  { label: 'UX Designer', value: 'You are a UX/UI design expert who provides actionable feedback on user experience, accessibility, and visual design.' },
+  { label: 'Legal Assistant',   value: 'You are an expert legal assistant with broad knowledge of contract law, compliance, and regulatory frameworks.' },
+  { label: 'Creative Writer',   value: 'You are a creative writing coach and storytelling expert who helps craft compelling narratives and characters.' },
+  { label: 'UX Designer',       value: 'You are a UX/UI design expert who provides actionable feedback on user experience, accessibility, and visual design.' },
 ];
 
-const TONE_TAGS = ['Empathetic', 'Authoritative', 'Friendly', 'Witty', 'Analytical', 'Inspirational', 'Socratic', 'Direct', 'Diplomatic'];
+const TONE_TAGS = ['Empathetic','Authoritative','Friendly','Witty','Analytical','Inspirational','Socratic','Direct','Diplomatic'];
 
-const COT_STEPS_TAGS = ['Restate the problem', 'Identify assumptions', 'List unknowns', 'Consider edge cases', 'Evaluate alternatives', 'Check for contradictions', 'Estimate confidence', 'Cite sources / evidence'];
+const COT_STEPS_TAGS = ['Restate the problem','Identify assumptions','List unknowns','Consider edge cases','Evaluate alternatives','Check for contradictions','Estimate confidence','Cite sources / evidence'];
 
 const COT_STYLES = [
-  { value: 'think-step', label: 'Think step by step before answering' },
-  { value: 'scratchpad', label: 'Use a scratchpad, then provide final answer' },
-  { value: 'reasoning-tags', label: 'Show reasoning in <thinking> tags (Claude)' },
-  { value: 'lets-think', label: "Let's think about this carefully..." },
-  { value: 'first-principles', label: 'Break this down from first principles' },
-  { value: 'custom', label: 'Custom (write your own)' },
+  { value: 'think-step',      label: 'Think step by step before answering' },
+  { value: 'scratchpad',      label: 'Use a scratchpad, then provide final answer' },
+  { value: 'reasoning-tags',  label: 'Show reasoning in <thinking> tags (Claude)' },
+  { value: 'lets-think',      label: "Let's think about this carefully..." },
+  { value: 'first-principles',label: 'Break this down from first principles' },
+  { value: 'custom',          label: 'Custom (write your own)' },
 ];
 
 const COT_MAP = {
-  'think-step': 'Think step by step before providing your final answer.',
-  'scratchpad': 'First use a scratchpad to work through your reasoning, then provide your final answer clearly labeled.',
-  'reasoning-tags': 'Show all reasoning inside <thinking> tags before your final response.',
-  'lets-think': "Let's think about this carefully and methodically before arriving at an answer.",
+  'think-step':       'Think step by step before providing your final answer.',
+  'scratchpad':       'First use a scratchpad to work through your reasoning, then provide your final answer clearly labeled.',
+  'reasoning-tags':   'Show all reasoning inside <thinking> tags before your final response.',
+  'lets-think':       "Let's think about this carefully and methodically before arriving at an answer.",
   'first-principles': 'Break this down from first principles. Identify core assumptions, reason step by step, and derive your answer logically.',
 };
 
 const FALLBACK_TYPES = [
-  { value: '', label: 'No fallback instruction' },
-  { value: 'ask', label: 'Ask for clarification' },
+  { value: '',            label: 'No fallback instruction' },
+  { value: 'ask',         label: 'Ask for clarification' },
   { value: 'best-effort', label: 'Make a best-effort attempt and flag uncertainty' },
-  { value: 'refuse', label: 'Politely decline and explain why' },
-  { value: 'partial', label: 'Provide a partial answer and note limitations' },
-  { value: 'rephrase', label: 'Rephrase the question back to the user' },
-  { value: 'custom', label: 'Custom fallback' },
+  { value: 'refuse',      label: 'Politely decline and explain why' },
+  { value: 'partial',     label: 'Provide a partial answer and note limitations' },
+  { value: 'rephrase',    label: 'Rephrase the question back to the user' },
+  { value: 'custom',      label: 'Custom fallback' },
 ];
 
 const FALLBACK_MAP = {
-  ask: 'If the request is unclear or ambiguous, ask clarifying questions before proceeding.',
-  'best-effort': 'If you are uncertain, make a best-effort attempt and clearly flag any assumptions or limitations.',
-  refuse: 'If the request is outside your scope or capabilities, politely decline and briefly explain why.',
-  partial: 'If you can only partially fulfill the request, do so and clearly note what is missing or uncertain.',
-  rephrase: 'If unclear, rephrase the question back to the user in your own words and ask for confirmation.',
+  ask:          'If the request is unclear or ambiguous, ask clarifying questions before proceeding.',
+  'best-effort':'If you are uncertain, make a best-effort attempt and clearly flag any assumptions or limitations.',
+  refuse:       'If the request is outside your scope or capabilities, politely decline and briefly explain why.',
+  partial:      'If you can only partially fulfill the request, do so and clearly note what is missing or uncertain.',
+  rephrase:     'If unclear, rephrase the question back to the user in your own words and ask for confirmation.',
 };
 
-// ─── App state (non-DOM) ─────────────────────────────────────────────────────
-let currentStep = 0;
+// ─── Global in-memory state ───────────────────────────────────────────────────
+// This is the single source of truth. DOM fields sync INTO here on every
+// change; buildPrompt / captureState read FROM here, never from the DOM.
+// This fixes the wizard bug where only the active step's DOM exists.
+let appState = {
+  model: 'claude',
+  role: '',
+  ctx: { company: '', domain: '', audience: '', extra: '' },
+  objective: { type: '', description: '' },
+  positiveRules: [],
+  negativeRules: [],
+  tone: { formality: '50', detail: '50', energy: '50', tags: [] },
+  format: { type: 'plain', length: '', template: '' },
+  fewShots: [],
+  cot: { enabled: false, style: 'think-step', custom: '', rules: [], constraints: [], steps: [], separate: false },
+  fallback: { type: '', custom: '' },
+  promptName: '',
+};
+
+let currentStep   = 0;
 let autosaveTimer = null;
-let ruleCounters = { pos: 0, neg: 0, cotr: 0, cotc: 0 };
-let shotCounter = 0;
+let shotCounter   = 0;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function esc(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function syncSlider(el) {
+  el.style.setProperty('--pct', el.value + '%');
+}
+
+// Save current DOM fields for a given step into appState
+function flushStep(stepId) {
+  const s = steps.find(x => x.id === stepId);
+  if (s && s.flush) s.flush();
+}
 
 // ─── Step definitions ─────────────────────────────────────────────────────────
-// Each step has: id, title, icon, render(), summary(), bind()
+// Each step: render() → HTML string pre-filled from appState
+//            bind()   → attaches listeners that write back to appState
+//            flush()  → explicit DOM→appState sync (called before navigation)
+//            summary()→ compact read-only HTML from appState (no DOM queries)
 const steps = [
+  // ── 1. Target Model ──────────────────────────────────────────────────────
   {
-    id: 'model',
-    title: 'Target Model',
-    icon: '🤖',
+    id: 'model', title: 'Target Model', icon: '🤖',
     render() {
+      const options = ['claude','gpt','gemini','llama','mistral','generic'].map(v =>
+        `<option value="${v}" ${appState.model === v ? 'selected' : ''}>${MODEL_LABELS[v]}</option>`
+      ).join('');
       return `
         <div>
           <label>Select your target model</label>
-          <select id="target-model">
-            <option value="claude">Claude (Anthropic)</option>
-            <option value="gpt">GPT-4 / ChatGPT (OpenAI)</option>
-            <option value="gemini">Gemini (Google)</option>
-            <option value="llama">Llama (Meta)</option>
-            <option value="mistral">Mistral</option>
-            <option value="generic">Generic / Universal</option>
-          </select>
+          <select id="target-model">${options}</select>
         </div>
-        <div class="model-hint" id="model-hint">${MODEL_HINTS.claude}</div>`;
+        <div class="model-hint" id="model-hint">${MODEL_HINTS[appState.model] || MODEL_HINTS.generic}</div>`;
     },
     bind() {
-      document.getElementById('target-model').addEventListener('change', () => {
-        const val = document.getElementById('target-model').value;
-        document.getElementById('model-hint').innerHTML = MODEL_HINTS[val] || MODEL_HINTS.generic;
+      const el = document.getElementById('target-model');
+      el.addEventListener('change', () => {
+        appState.model = el.value;
+        document.getElementById('model-hint').innerHTML = MODEL_HINTS[el.value] || MODEL_HINTS.generic;
         updateHeaderSubtitle();
-        scheduleAutosave();
-        updatePreview();
+        autosaveAndPreview();
       });
     },
+    flush() { const el = document.getElementById('target-model'); if (el) appState.model = el.value; },
     summary() {
-      const model = document.getElementById('target-model')?.value || 'claude';
-      return `<div class="summary-content">${MODEL_LABELS[model] || model}</div>`;
-    },
-    read() {
-      return { model: document.getElementById('target-model')?.value || 'claude' };
+      return `<div class="summary-content">${esc(MODEL_LABELS[appState.model] || appState.model)}</div>`;
     },
   },
 
+  // ── 2. Role ──────────────────────────────────────────────────────────────
   {
-    id: 'role',
-    title: 'Role',
-    icon: '🎭',
+    id: 'role', title: 'Role', icon: '🎭',
     render() {
       const presetsHtml = ROLE_PRESETS.map(p =>
-        `<button class="preset-btn" data-value="${esc(p.value)}">${esc(p.label)}</button>`
+        `<button class="preset-btn ${appState.role === p.value ? 'active' : ''}" data-value="${esc(p.value)}">${esc(p.label)}</button>`
       ).join('');
       return `
         <div>
@@ -156,7 +185,7 @@ const steps = [
         </div>
         <div>
           <label>Custom role description</label>
-          <textarea id="role-custom" placeholder="You are a..." rows="3"></textarea>
+          <textarea id="role-custom" placeholder="You are a..." rows="3">${esc(appState.role)}</textarea>
         </div>`;
     },
     bind() {
@@ -164,79 +193,78 @@ const steps = [
         btn.addEventListener('click', () => {
           document.querySelectorAll('#role-presets .preset-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          document.getElementById('role-custom').value = btn.dataset.value;
-          scheduleAutosave(); updatePreview();
+          const ta = document.getElementById('role-custom');
+          ta.value = btn.dataset.value;
+          appState.role = btn.dataset.value;
+          autosaveAndPreview();
         });
       });
-      document.getElementById('role-custom').addEventListener('input', () => { scheduleAutosave(); updatePreview(); });
+      document.getElementById('role-custom').addEventListener('input', e => {
+        appState.role = e.target.value;
+        autosaveAndPreview();
+      });
     },
+    flush() { const el = document.getElementById('role-custom'); if (el) appState.role = el.value; },
     summary() {
-      const val = document.getElementById('role-custom')?.value?.trim();
-      if (!val) return `<div class="summary-content"><em>Not set</em></div>`;
-      return `<div class="summary-content">${esc(val.slice(0, 80))}${val.length > 80 ? '…' : ''}</div>`;
-    },
-    read() {
-      return { role: document.getElementById('role-custom')?.value || '' };
+      const v = (appState.role || '').trim();
+      if (!v) return `<div class="summary-content muted">Not set</div>`;
+      return `<div class="summary-content">${esc(v.slice(0, 90))}${v.length > 90 ? '…' : ''}</div>`;
     },
   },
 
+  // ── 3. Context ───────────────────────────────────────────────────────────
   {
-    id: 'context',
-    title: 'Context',
-    icon: '🏢',
+    id: 'context', title: 'Context', icon: '🏢',
     render() {
+      const c = appState.ctx;
       return `
         <div class="row-2">
           <div>
             <label>Company / Organization</label>
-            <input type="text" id="ctx-company" placeholder="e.g. Acme Corp">
+            <input type="text" id="ctx-company" placeholder="e.g. Acme Corp" value="${esc(c.company)}">
           </div>
           <div>
             <label>Industry / Domain</label>
-            <input type="text" id="ctx-domain" placeholder="e.g. SaaS, Healthcare">
+            <input type="text" id="ctx-domain" placeholder="e.g. SaaS, Healthcare" value="${esc(c.domain)}">
           </div>
         </div>
         <div>
           <label>Target audience</label>
-          <input type="text" id="ctx-audience" placeholder="e.g. non-technical executives, developers">
+          <input type="text" id="ctx-audience" placeholder="e.g. non-technical executives, developers" value="${esc(c.audience)}">
         </div>
         <div>
           <label>Additional context</label>
-          <textarea id="ctx-extra" placeholder="Any relevant background information, constraints, or situational details..."></textarea>
+          <textarea id="ctx-extra" placeholder="Any relevant background information, constraints, or situational details...">${esc(c.extra)}</textarea>
         </div>`;
     },
     bind() {
-      ['ctx-company', 'ctx-domain', 'ctx-audience', 'ctx-extra'].forEach(id => {
-        document.getElementById(id)?.addEventListener('input', () => { scheduleAutosave(); updatePreview(); });
+      ['company','domain','audience','extra'].forEach(k => {
+        document.getElementById(`ctx-${k}`)?.addEventListener('input', e => {
+          appState.ctx[k] = e.target.value;
+          autosaveAndPreview();
+        });
+      });
+    },
+    flush() {
+      ['company','domain','audience','extra'].forEach(k => {
+        const el = document.getElementById(`ctx-${k}`);
+        if (el) appState.ctx[k] = el.value;
       });
     },
     summary() {
-      const company = document.getElementById('ctx-company')?.value?.trim();
-      const domain = document.getElementById('ctx-domain')?.value?.trim();
-      const audience = document.getElementById('ctx-audience')?.value?.trim();
-      const parts = [company && `Company: ${company}`, domain && `Domain: ${domain}`, audience && `Audience: ${audience}`].filter(Boolean);
-      if (!parts.length) return `<div class="summary-content"><em>Not set</em></div>`;
+      const c = appState.ctx;
+      const parts = [c.company && `Company: ${c.company}`, c.domain && `Domain: ${c.domain}`, c.audience && `Audience: ${c.audience}`].filter(Boolean);
+      if (!parts.length) return `<div class="summary-content muted">Not set</div>`;
       return `<div class="summary-content">${parts.map(esc).join('<br>')}</div>`;
-    },
-    read() {
-      return {
-        ctx: {
-          company: document.getElementById('ctx-company')?.value || '',
-          domain: document.getElementById('ctx-domain')?.value || '',
-          audience: document.getElementById('ctx-audience')?.value || '',
-          extra: document.getElementById('ctx-extra')?.value || '',
-        }
-      };
     },
   },
 
+  // ── 4. Objective ─────────────────────────────────────────────────────────
   {
-    id: 'objective',
-    title: 'Objective',
-    icon: '🎯',
+    id: 'objective', title: 'Objective', icon: '🎯',
     render() {
       const buttonsHtml = TASK_TYPES.map(t =>
-        `<button class="task-type-btn" data-value="${t.value}">${esc(t.label)}</button>`
+        `<button class="task-type-btn ${appState.objective.type === t.value ? 'active' : ''}" data-value="${t.value}">${esc(t.label)}</button>`
       ).join('');
       return `
         <div>
@@ -245,7 +273,7 @@ const steps = [
         </div>
         <div>
           <label>Describe the specific objective</label>
-          <textarea id="obj-description" placeholder="What exactly should the AI accomplish? Be specific..."></textarea>
+          <textarea id="obj-description" placeholder="What exactly should the AI accomplish? Be specific...">${esc(appState.objective.description)}</textarea>
         </div>`;
     },
     bind() {
@@ -255,98 +283,115 @@ const steps = [
           document.querySelectorAll('#task-type-grid .task-type-btn').forEach(b => b.classList.remove('active'));
           if (!wasActive) {
             btn.classList.add('active');
+            appState.objective.type = btn.dataset.value;
             const desc = document.getElementById('obj-description');
             if (!desc.value && TASK_STARTERS[btn.dataset.value]) {
               desc.value = TASK_STARTERS[btn.dataset.value];
+              appState.objective.description = desc.value;
             }
+          } else {
+            appState.objective.type = '';
           }
-          scheduleAutosave(); updatePreview();
+          autosaveAndPreview();
         });
       });
-      document.getElementById('obj-description').addEventListener('input', () => { scheduleAutosave(); updatePreview(); });
+      document.getElementById('obj-description').addEventListener('input', e => {
+        appState.objective.description = e.target.value;
+        autosaveAndPreview();
+      });
+    },
+    flush() {
+      const btn = document.querySelector('#task-type-grid .task-type-btn.active');
+      appState.objective.type = btn?.dataset.value || '';
+      const el = document.getElementById('obj-description');
+      if (el) appState.objective.description = el.value;
     },
     summary() {
-      const activeBtn = document.querySelector('#task-type-grid .task-type-btn.active');
-      const desc = document.getElementById('obj-description')?.value?.trim();
-      const typePart = activeBtn ? `<span class="summary-tag">${esc(activeBtn.textContent)}</span>` : '';
-      const descPart = desc ? `<div class="summary-content" style="margin-top:6px">${esc(desc.slice(0, 70))}${desc.length > 70 ? '…' : ''}</div>` : '';
-      if (!typePart && !descPart) return `<div class="summary-content"><em>Not set</em></div>`;
+      const type = appState.objective.type;
+      const desc = (appState.objective.description || '').trim();
+      const typeLabel = TASK_TYPES.find(t => t.value === type)?.label;
+      const typePart = typeLabel ? `<span class="summary-tag">${esc(typeLabel)}</span>` : '';
+      const descPart = desc ? `<div class="summary-content" style="margin-top:6px">${esc(desc.slice(0,70))}${desc.length>70?'…':''}</div>` : '';
+      if (!typePart && !descPart) return `<div class="summary-content muted">Not set</div>`;
       return `<div class="summary-tags">${typePart}</div>${descPart}`;
-    },
-    read() {
-      const activeBtn = document.querySelector('#task-type-grid .task-type-btn.active');
-      return {
-        objective: {
-          type: activeBtn?.dataset.value || '',
-          description: document.getElementById('obj-description')?.value || '',
-        }
-      };
     },
   },
 
+  // ── 5. Positive Rules ────────────────────────────────────────────────────
   {
-    id: 'rules',
-    title: 'Positive Rules',
-    icon: '✅',
+    id: 'rules', title: 'Positive Rules', icon: '✅',
     render() {
+      const items = appState.positiveRules.map((r, i) => renderRuleItem('pos', i, r, 'Enter rule...')).join('');
       return `
         <label>Things the AI should always do</label>
-        <div class="rule-list" id="positive-rules"></div>
+        <div class="rule-list" id="positive-rules">${items}</div>
         <button class="add-btn" id="add-pos-rule">+ Add rule</button>`;
     },
     bind() {
-      document.getElementById('add-pos-rule').addEventListener('click', () => addRule('positive-rules', 'pos'));
+      bindRuleList('positive-rules', 'pos', 'positiveRules', 'Enter rule...');
+      document.getElementById('add-pos-rule').addEventListener('click', () => {
+        appState.positiveRules.push('');
+        appendRuleItem('positive-rules', 'pos', appState.positiveRules.length - 1, '', 'positiveRules', 'Enter rule...');
+        autosaveAndPreview();
+      });
     },
+    flush() { appState.positiveRules = getDOMRuleValues('positive-rules'); },
     summary() {
-      const rules = getRuleValues('positive-rules');
-      if (!rules.length) return `<div class="summary-content"><em>None added</em></div>`;
-      return `<div class="summary-content">${rules.slice(0, 3).map(r => `• ${esc(r)}`).join('<br>')}${rules.length > 3 ? `<br><em>+${rules.length - 3} more</em>` : ''}</div>`;
+      const r = appState.positiveRules.filter(Boolean);
+      if (!r.length) return `<div class="summary-content muted">None added</div>`;
+      return `<div class="summary-content">${r.slice(0,3).map(x=>`• ${esc(x)}`).join('<br>')}${r.length>3?`<br><em>+${r.length-3} more`:''}`;
     },
-    read() { return { positiveRules: getRuleValues('positive-rules') }; },
   },
 
+  // ── 6. Negative Constraints ───────────────────────────────────────────────
   {
-    id: 'constraints',
-    title: 'Negative Constraints',
-    icon: '🚫',
+    id: 'constraints', title: 'Negative Constraints', icon: '🚫',
     render() {
+      const items = appState.negativeRules.map((r, i) => renderRuleItem('neg', i, r, 'Enter constraint...')).join('');
       return `
         <label>Things the AI should never do</label>
-        <div class="rule-list" id="negative-rules"></div>
+        <div class="rule-list" id="negative-rules">${items}</div>
         <button class="add-btn" id="add-neg-rule">+ Add constraint</button>`;
     },
     bind() {
-      document.getElementById('add-neg-rule').addEventListener('click', () => addRule('negative-rules', 'neg'));
+      bindRuleList('negative-rules', 'neg', 'negativeRules', 'Enter constraint...');
+      document.getElementById('add-neg-rule').addEventListener('click', () => {
+        appState.negativeRules.push('');
+        appendRuleItem('negative-rules', 'neg', appState.negativeRules.length - 1, '', 'negativeRules', 'Enter constraint...');
+        autosaveAndPreview();
+      });
     },
+    flush() { appState.negativeRules = getDOMRuleValues('negative-rules'); },
     summary() {
-      const rules = getRuleValues('negative-rules');
-      if (!rules.length) return `<div class="summary-content"><em>None added</em></div>`;
-      return `<div class="summary-content">${rules.slice(0, 3).map(r => `• ${esc(r)}`).join('<br>')}${rules.length > 3 ? `<br><em>+${rules.length - 3} more</em>` : ''}</div>`;
+      const r = appState.negativeRules.filter(Boolean);
+      if (!r.length) return `<div class="summary-content muted">None added</div>`;
+      return `<div class="summary-content">${r.slice(0,3).map(x=>`• ${esc(x)}`).join('<br>')}${r.length>3?`<br><em>+${r.length-3} more`:''}`;
     },
-    read() { return { negativeRules: getRuleValues('negative-rules') }; },
   },
 
+  // ── 7. Tone ──────────────────────────────────────────────────────────────
   {
-    id: 'tone',
-    title: 'Tone',
-    icon: '🎨',
+    id: 'tone', title: 'Tone', icon: '🎨',
     render() {
-      const tagsHtml = TONE_TAGS.map(t => `<span class="tag" data-tag="${esc(t)}">${esc(t)}</span>`).join('');
+      const t = appState.tone;
+      const tagsHtml = TONE_TAGS.map(tag =>
+        `<span class="tag ${t.tags.includes(tag) ? 'active' : ''}" data-tag="${esc(tag)}">${esc(tag)}</span>`
+      ).join('');
       return `
         <div class="tone-row">
           <div class="tone-slider-row">
             <span>Formal</span>
-            <input type="range" id="tone-formality" min="0" max="100" value="50">
+            <input type="range" id="tone-formality" min="0" max="100" value="${t.formality}" style="--pct:${t.formality}%">
             <span>Casual</span>
           </div>
           <div class="tone-slider-row">
             <span>Concise</span>
-            <input type="range" id="tone-detail" min="0" max="100" value="50">
+            <input type="range" id="tone-detail" min="0" max="100" value="${t.detail}" style="--pct:${t.detail}%">
             <span>Detailed</span>
           </div>
           <div class="tone-slider-row">
             <span>Neutral</span>
-            <input type="range" id="tone-energy" min="0" max="100" value="50">
+            <input type="range" id="tone-energy" min="0" max="100" value="${t.energy}" style="--pct:${t.energy}%">
             <span>Enthusiastic</span>
           </div>
         </div>
@@ -356,158 +401,176 @@ const steps = [
         </div>`;
     },
     bind() {
-      ['tone-formality', 'tone-detail', 'tone-energy'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { syncSlider(el); el.addEventListener('input', () => { syncSlider(el); scheduleAutosave(); updatePreview(); }); }
+      ['formality','detail','energy'].forEach(k => {
+        const el = document.getElementById(`tone-${k}`);
+        if (!el) return;
+        el.addEventListener('input', () => {
+          appState.tone[k] = el.value;
+          syncSlider(el);
+          autosaveAndPreview();
+        });
       });
       document.querySelectorAll('#tone-tags .tag').forEach(tag => {
-        tag.addEventListener('click', () => { tag.classList.toggle('active'); scheduleAutosave(); updatePreview(); });
+        tag.addEventListener('click', () => {
+          tag.classList.toggle('active');
+          appState.tone.tags = [...document.querySelectorAll('#tone-tags .tag.active')].map(t => t.dataset.tag);
+          autosaveAndPreview();
+        });
       });
     },
-    summary() {
-      const activeTags = [...(document.querySelectorAll('#tone-tags .tag.active') || [])].map(t => t.dataset.tag);
-      const fVal = parseInt(document.getElementById('tone-formality')?.value || 50);
-      let fLabel = fVal < 30 ? 'Formal' : fVal > 70 ? 'Casual' : 'Balanced';
-      const parts = [fLabel, ...activeTags];
-      return `<div class="summary-tags">${parts.map(p => `<span class="summary-tag">${esc(p)}</span>`).join('')}</div>`;
+    flush() {
+      ['formality','detail','energy'].forEach(k => {
+        const el = document.getElementById(`tone-${k}`);
+        if (el) appState.tone[k] = el.value;
+      });
+      const tagEls = document.querySelectorAll('#tone-tags .tag.active');
+      if (tagEls) appState.tone.tags = [...tagEls].map(t => t.dataset.tag);
     },
-    read() {
-      return {
-        tone: {
-          formality: document.getElementById('tone-formality')?.value || '50',
-          detail: document.getElementById('tone-detail')?.value || '50',
-          energy: document.getElementById('tone-energy')?.value || '50',
-          tags: [...(document.querySelectorAll('#tone-tags .tag.active') || [])].map(t => t.dataset.tag),
-        }
-      };
+    summary() {
+      const f = parseInt(appState.tone.formality || 50);
+      const fLabel = f < 30 ? 'Formal' : f > 70 ? 'Casual' : 'Balanced';
+      const parts = [fLabel, ...appState.tone.tags];
+      return `<div class="summary-tags">${parts.map(p=>`<span class="summary-tag">${esc(p)}</span>`).join('')}</div>`;
     },
   },
 
+  // ── 8. Output Format ─────────────────────────────────────────────────────
   {
-    id: 'format',
-    title: 'Output Format',
-    icon: '📄',
+    id: 'format', title: 'Output Format', icon: '📄',
     render() {
+      const fmt = appState.format;
+      const fmtOptions = [
+        ['plain','Plain text'],['markdown','Markdown'],['json','JSON'],
+        ['bullet','Bullet list'],['numbered','Numbered list'],['table','Table'],
+        ['html','HTML'],['template','Custom template']
+      ].map(([v,l]) => `<option value="${v}" ${fmt.type===v?'selected':''}>${l}</option>`).join('');
+      const lenOptions = [
+        ['','No specific length'],['1-2 sentences','1–2 sentences'],
+        ['1 paragraph','1 paragraph'],['3-5 bullet points','3–5 bullet points'],
+        ['under 200 words','Under 200 words'],['under 500 words','Under 500 words'],
+        ['500-1000 words','500–1000 words'],['comprehensive, no limit','Comprehensive, no limit']
+      ].map(([v,l]) => `<option value="${v}" ${fmt.length===v?'selected':''}>${l}</option>`).join('');
       return `
         <div>
           <label>Format type</label>
-          <select id="fmt-type">
-            <option value="plain">Plain text</option>
-            <option value="markdown">Markdown</option>
-            <option value="json">JSON</option>
-            <option value="bullet">Bullet list</option>
-            <option value="numbered">Numbered list</option>
-            <option value="table">Table</option>
-            <option value="html">HTML</option>
-            <option value="template">Custom template</option>
-          </select>
+          <select id="fmt-type">${fmtOptions}</select>
         </div>
-        <div id="fmt-template-row" style="display:none">
+        <div id="fmt-template-row" ${fmt.type!=='template'?'style="display:none"':''}>
           <label>Custom template (use {placeholders})</label>
-          <textarea id="fmt-template" placeholder="**Title:** {title}&#10;**Summary:** {summary}&#10;**Action items:** {actions}"></textarea>
+          <textarea id="fmt-template" placeholder="**Title:** {title}&#10;**Summary:** {summary}">${esc(fmt.template)}</textarea>
         </div>
         <div>
           <label>Length guidance</label>
-          <select id="fmt-length">
-            <option value="">No specific length</option>
-            <option value="1-2 sentences">1–2 sentences</option>
-            <option value="1 paragraph">1 paragraph</option>
-            <option value="3-5 bullet points">3–5 bullet points</option>
-            <option value="under 200 words">Under 200 words</option>
-            <option value="under 500 words">Under 500 words</option>
-            <option value="500-1000 words">500–1000 words</option>
-            <option value="comprehensive, no limit">Comprehensive, no limit</option>
-          </select>
+          <select id="fmt-length">${lenOptions}</select>
         </div>`;
     },
     bind() {
       const fmtType = document.getElementById('fmt-type');
-      const fmtTemplateRow = document.getElementById('fmt-template-row');
+      const tmplRow = document.getElementById('fmt-template-row');
       fmtType.addEventListener('change', () => {
-        fmtTemplateRow.style.display = fmtType.value === 'template' ? '' : 'none';
-        scheduleAutosave(); updatePreview();
+        appState.format.type = fmtType.value;
+        tmplRow.style.display = fmtType.value === 'template' ? '' : 'none';
+        autosaveAndPreview();
       });
-      document.getElementById('fmt-length').addEventListener('change', () => { scheduleAutosave(); updatePreview(); });
-      document.getElementById('fmt-template').addEventListener('input', () => { scheduleAutosave(); updatePreview(); });
+      document.getElementById('fmt-length').addEventListener('change', e => {
+        appState.format.length = e.target.value;
+        autosaveAndPreview();
+      });
+      document.getElementById('fmt-template').addEventListener('input', e => {
+        appState.format.template = e.target.value;
+        autosaveAndPreview();
+      });
+    },
+    flush() {
+      const t = document.getElementById('fmt-type');
+      const l = document.getElementById('fmt-length');
+      const tp = document.getElementById('fmt-template');
+      if (t) appState.format.type = t.value;
+      if (l) appState.format.length = l.value;
+      if (tp) appState.format.template = tp.value;
     },
     summary() {
-      const fmt = document.getElementById('fmt-type')?.value || 'plain';
-      const len = document.getElementById('fmt-length')?.value;
-      const fmtLabels = { plain: 'Plain text', markdown: 'Markdown', json: 'JSON', bullet: 'Bullet list', numbered: 'Numbered list', table: 'Table', html: 'HTML', template: 'Custom template' };
-      const parts = [fmtLabels[fmt] || fmt, len || ''].filter(Boolean);
-      return `<div class="summary-tags">${parts.map(p => `<span class="summary-tag">${esc(p)}</span>`).join('')}</div>`;
-    },
-    read() {
-      return {
-        format: {
-          type: document.getElementById('fmt-type')?.value || 'plain',
-          length: document.getElementById('fmt-length')?.value || '',
-          template: document.getElementById('fmt-template')?.value || '',
-        }
-      };
+      const fmt = appState.format;
+      const labels = { plain:'Plain text', markdown:'Markdown', json:'JSON', bullet:'Bullet list', numbered:'Numbered list', table:'Table', html:'HTML', template:'Custom template' };
+      const parts = [labels[fmt.type]||fmt.type, fmt.length||''].filter(Boolean);
+      return `<div class="summary-tags">${parts.map(p=>`<span class="summary-tag">${esc(p)}</span>`).join('')}</div>`;
     },
   },
 
+  // ── 9. Few-Shot Examples ──────────────────────────────────────────────────
   {
-    id: 'examples',
-    title: 'Few-Shot Examples',
-    icon: '💡',
+    id: 'examples', title: 'Few-Shot Examples', icon: '💡',
     render() {
+      const pairsHtml = appState.fewShots.map((shot, i) => renderFewShotPair(i, shot)).join('');
       return `
         <label>Provide input → output pairs to guide the model</label>
-        <div id="few-shot-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div id="few-shot-list" style="display:flex;flex-direction:column;gap:10px;">${pairsHtml}</div>
         <button class="add-btn" id="add-few-shot">+ Add example pair</button>`;
     },
     bind() {
-      document.getElementById('add-few-shot').addEventListener('click', addFewShot);
+      bindFewShotList();
+      document.getElementById('add-few-shot').addEventListener('click', () => {
+        appState.fewShots.push({ input: '', output: '' });
+        const idx = appState.fewShots.length - 1;
+        const list = document.getElementById('few-shot-list');
+        const div = document.createElement('div');
+        div.innerHTML = renderFewShotPair(idx, { input: '', output: '' });
+        list.appendChild(div.firstElementChild);
+        bindFewShotPair(list.lastElementChild, idx);
+        autosaveAndPreview();
+      });
+    },
+    flush() {
+      appState.fewShots = [...(document.querySelectorAll('#few-shot-list .few-shot-pair')||[])].map(pair => {
+        const [a, b] = pair.querySelectorAll('textarea');
+        return { input: a?.value||'', output: b?.value||'' };
+      });
     },
     summary() {
-      const count = document.querySelectorAll('#few-shot-list .few-shot-pair')?.length || 0;
-      if (!count) return `<div class="summary-content"><em>No examples added</em></div>`;
-      return `<div class="summary-content">${count} example pair${count !== 1 ? 's' : ''}</div>`;
-    },
-    read() {
-      return {
-        fewShots: [...(document.querySelectorAll('#few-shot-list .few-shot-pair') || [])].map(pair => {
-          const [a, b] = pair.querySelectorAll('textarea');
-          return { input: a?.value || '', output: b?.value || '' };
-        })
-      };
+      const count = appState.fewShots.filter(s => s.input || s.output).length;
+      if (!count) return `<div class="summary-content muted">No examples added</div>`;
+      return `<div class="summary-content">${count} example pair${count!==1?'s':''}</div>`;
     },
   },
 
+  // ── 10. Chain of Thought ─────────────────────────────────────────────────
   {
-    id: 'cot',
-    title: 'Chain of Thought',
-    icon: '🔗',
+    id: 'cot', title: 'Chain of Thought', icon: '🔗',
     render() {
-      const styleOptions = COT_STYLES.map(s => `<option value="${s.value}">${esc(s.label)}</option>`).join('');
-      const stepsHtml = COT_STEPS_TAGS.map(t => `<span class="tag" data-tag="${esc(t)}">${esc(t)}</span>`).join('');
+      const cot = appState.cot;
+      const styleOptions = COT_STYLES.map(s =>
+        `<option value="${s.value}" ${cot.style===s.value?'selected':''}>${esc(s.label)}</option>`
+      ).join('');
+      const stepsHtml = COT_STEPS_TAGS.map(t =>
+        `<span class="tag ${cot.steps.includes(t)?'active':''}" data-tag="${esc(t)}">${esc(t)}</span>`
+      ).join('');
+      const ruleItems = cot.rules.map((r,i) => renderRuleItem('cotr',i,r,'e.g. Always verify numerical claims')).join('');
+      const cstItems  = cot.constraints.map((r,i) => renderRuleItem('cotc',i,r,'e.g. Do not jump to conclusions')).join('');
       return `
         <div class="toggle-row">
           <span class="toggle-label">Enable chain-of-thought reasoning</span>
           <label class="toggle">
-            <input type="checkbox" id="cot-enabled">
+            <input type="checkbox" id="cot-enabled" ${cot.enabled?'checked':''}>
             <span class="toggle-track"></span>
           </label>
         </div>
-        <div id="cot-options" style="display:none;flex-direction:column;gap:14px;">
+        <div id="cot-options" style="display:${cot.enabled?'flex':'none'};flex-direction:column;gap:14px;">
           <div>
             <label>Built-in CoT style</label>
             <select id="cot-style">${styleOptions}</select>
           </div>
-          <div id="cot-custom-row" style="display:none">
+          <div id="cot-custom-row" style="display:${cot.style==='custom'?'':'none'}">
             <label>Custom CoT instruction</label>
-            <textarea id="cot-custom" placeholder="e.g. Before answering, list your assumptions, then reason through each one..." rows="3"></textarea>
+            <textarea id="cot-custom" rows="3" placeholder="e.g. Before answering, list your assumptions...">${esc(cot.custom)}</textarea>
           </div>
           <div>
-            <label>Reasoning rules <span style="color:var(--muted);font-weight:400;">(applied inside the thinking phase)</span></label>
-            <div class="rule-list" id="cot-rules"></div>
+            <label>Reasoning rules <span style="color:var(--muted);font-weight:400">(applied inside the thinking phase)</span></label>
+            <div class="rule-list" id="cot-rules">${ruleItems}</div>
             <button class="add-btn" id="add-cot-rule">+ Add reasoning rule</button>
           </div>
           <div>
-            <label>Reasoning constraints <span style="color:var(--muted);font-weight:400;">(things to avoid while reasoning)</span></label>
-            <div class="rule-list" id="cot-constraints"></div>
+            <label>Reasoning constraints <span style="color:var(--muted);font-weight:400">(things to avoid while reasoning)</span></label>
+            <div class="rule-list" id="cot-constraints">${cstItems}</div>
             <button class="add-btn" id="add-cot-constraint">+ Add reasoning constraint</button>
           </div>
           <div>
@@ -515,151 +578,216 @@ const steps = [
             <div class="tag-picker" id="cot-steps">${stepsHtml}</div>
           </div>
           <div class="toggle-row">
-            <span class="toggle-label" style="font-size:0.82rem;">Separate reasoning from final answer</span>
+            <span class="toggle-label" style="font-size:0.82rem">Separate reasoning from final answer</span>
             <label class="toggle">
-              <input type="checkbox" id="cot-separate">
+              <input type="checkbox" id="cot-separate" ${cot.separate?'checked':''}>
               <span class="toggle-track"></span>
             </label>
           </div>
         </div>`;
     },
     bind() {
-      const enabled = document.getElementById('cot-enabled');
+      const enabledEl = document.getElementById('cot-enabled');
       const optionsEl = document.getElementById('cot-options');
-      enabled.addEventListener('change', () => {
-        optionsEl.style.display = enabled.checked ? 'flex' : 'none';
-        scheduleAutosave(); updatePreview();
+      enabledEl.addEventListener('change', () => {
+        appState.cot.enabled = enabledEl.checked;
+        optionsEl.style.display = enabledEl.checked ? 'flex' : 'none';
+        autosaveAndPreview();
       });
       const styleEl = document.getElementById('cot-style');
       styleEl.addEventListener('change', () => {
+        appState.cot.style = styleEl.value;
         document.getElementById('cot-custom-row').style.display = styleEl.value === 'custom' ? '' : 'none';
-        scheduleAutosave(); updatePreview();
+        autosaveAndPreview();
       });
-      document.getElementById('cot-custom').addEventListener('input', () => { scheduleAutosave(); updatePreview(); });
-      document.getElementById('add-cot-rule').addEventListener('click', () => addRule('cot-rules', 'cotr', 'e.g. Always verify numerical claims before concluding'));
-      document.getElementById('add-cot-constraint').addEventListener('click', () => addRule('cot-constraints', 'cotc', 'e.g. Do not jump to conclusions without evidence'));
+      document.getElementById('cot-custom').addEventListener('input', e => {
+        appState.cot.custom = e.target.value;
+        autosaveAndPreview();
+      });
+      document.getElementById('cot-separate').addEventListener('change', e => {
+        appState.cot.separate = e.target.checked;
+        autosaveAndPreview();
+      });
+      bindRuleList('cot-rules', 'cotr', 'cot.rules', 'e.g. Always verify numerical claims');
+      document.getElementById('add-cot-rule').addEventListener('click', () => {
+        appState.cot.rules.push('');
+        appendRuleItem('cot-rules','cotr', appState.cot.rules.length-1, '', 'cot.rules', 'e.g. Always verify numerical claims');
+        autosaveAndPreview();
+      });
+      bindRuleList('cot-constraints','cotc','cot.constraints','e.g. Do not jump to conclusions');
+      document.getElementById('add-cot-constraint').addEventListener('click', () => {
+        appState.cot.constraints.push('');
+        appendRuleItem('cot-constraints','cotc', appState.cot.constraints.length-1, '', 'cot.constraints', 'e.g. Do not jump to conclusions');
+        autosaveAndPreview();
+      });
       document.querySelectorAll('#cot-steps .tag').forEach(tag => {
-        tag.addEventListener('click', () => { tag.classList.toggle('active'); scheduleAutosave(); updatePreview(); });
+        tag.addEventListener('click', () => {
+          tag.classList.toggle('active');
+          appState.cot.steps = [...document.querySelectorAll('#cot-steps .tag.active')].map(t => t.dataset.tag);
+          autosaveAndPreview();
+        });
       });
-      document.getElementById('cot-separate').addEventListener('change', () => { scheduleAutosave(); updatePreview(); });
+    },
+    flush() {
+      const en = document.getElementById('cot-enabled'); if (en) appState.cot.enabled = en.checked;
+      const st = document.getElementById('cot-style');   if (st) appState.cot.style = st.value;
+      const cu = document.getElementById('cot-custom');  if (cu) appState.cot.custom = cu.value;
+      const sep= document.getElementById('cot-separate');if (sep) appState.cot.separate = sep.checked;
+      const rEl = document.querySelectorAll('#cot-rules input');
+      if (rEl.length) appState.cot.rules = [...rEl].map(i=>i.value);
+      const cEl = document.querySelectorAll('#cot-constraints input');
+      if (cEl.length) appState.cot.constraints = [...cEl].map(i=>i.value);
+      const sEl = document.querySelectorAll('#cot-steps .tag.active');
+      if (sEl.length) appState.cot.steps = [...sEl].map(t=>t.dataset.tag);
     },
     summary() {
-      const enabled = document.getElementById('cot-enabled')?.checked;
-      if (!enabled) return `<div class="summary-content"><em>Disabled</em></div>`;
-      const style = document.getElementById('cot-style')?.value;
-      const styleLabel = COT_STYLES.find(s => s.value === style)?.label || style;
+      if (!appState.cot.enabled) return `<div class="summary-content muted">Disabled</div>`;
+      const styleLabel = COT_STYLES.find(s=>s.value===appState.cot.style)?.label || appState.cot.style;
       return `<div class="summary-tags"><span class="summary-tag">Enabled</span></div><div class="summary-content" style="margin-top:6px">${esc(styleLabel)}</div>`;
-    },
-    read() {
-      return {
-        cot: {
-          enabled: document.getElementById('cot-enabled')?.checked || false,
-          style: document.getElementById('cot-style')?.value || 'think-step',
-          custom: document.getElementById('cot-custom')?.value || '',
-          rules: getRuleValues('cot-rules'),
-          constraints: getRuleValues('cot-constraints'),
-          steps: [...(document.querySelectorAll('#cot-steps .tag.active') || [])].map(t => t.dataset.tag),
-          separate: document.getElementById('cot-separate')?.checked || false,
-        }
-      };
     },
   },
 
+  // ── 11. Fallback Behavior ─────────────────────────────────────────────────
   {
-    id: 'fallback',
-    title: 'Fallback Behavior',
-    icon: '⚠️',
+    id: 'fallback', title: 'Fallback Behavior', icon: '⚠️',
     render() {
-      const options = FALLBACK_TYPES.map(f => `<option value="${f.value}">${esc(f.label)}</option>`).join('');
+      const fb = appState.fallback;
+      const options = FALLBACK_TYPES.map(f =>
+        `<option value="${f.value}" ${fb.type===f.value?'selected':''}>${esc(f.label)}</option>`
+      ).join('');
       return `
         <div>
           <label>When the request is unclear or out of scope</label>
           <select id="fallback-type">${options}</select>
         </div>
-        <div id="fallback-custom-row" style="display:none">
+        <div id="fallback-custom-row" ${fb.type!=='custom'?'style="display:none"':''}>
           <label>Custom fallback instruction</label>
-          <textarea id="fallback-custom" placeholder="Describe how the AI should handle uncertain or out-of-scope requests..."></textarea>
+          <textarea id="fallback-custom" placeholder="Describe how the AI should handle uncertain or out-of-scope requests...">${esc(fb.custom)}</textarea>
         </div>`;
     },
     bind() {
       const typeEl = document.getElementById('fallback-type');
       typeEl.addEventListener('change', () => {
+        appState.fallback.type = typeEl.value;
         document.getElementById('fallback-custom-row').style.display = typeEl.value === 'custom' ? '' : 'none';
-        scheduleAutosave(); updatePreview();
+        autosaveAndPreview();
       });
-      document.getElementById('fallback-custom').addEventListener('input', () => { scheduleAutosave(); updatePreview(); });
+      document.getElementById('fallback-custom').addEventListener('input', e => {
+        appState.fallback.custom = e.target.value;
+        autosaveAndPreview();
+      });
+    },
+    flush() {
+      const t = document.getElementById('fallback-type');   if (t) appState.fallback.type = t.value;
+      const c = document.getElementById('fallback-custom'); if (c) appState.fallback.custom = c.value;
     },
     summary() {
-      const val = document.getElementById('fallback-type')?.value;
-      if (!val) return `<div class="summary-content"><em>Not set</em></div>`;
-      const label = FALLBACK_TYPES.find(f => f.value === val)?.label || val;
+      const { type } = appState.fallback;
+      if (!type) return `<div class="summary-content muted">Not set</div>`;
+      const label = FALLBACK_TYPES.find(f=>f.value===type)?.label || type;
       return `<div class="summary-content">${esc(label)}</div>`;
-    },
-    read() {
-      return {
-        fallback: {
-          type: document.getElementById('fallback-type')?.value || '',
-          custom: document.getElementById('fallback-custom')?.value || '',
-        }
-      };
     },
   },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function esc(str) {
-  if (str == null) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+// ─── Rule list helpers ────────────────────────────────────────────────────────
+function renderRuleItem(prefix, idx, value, placeholder) {
+  return `<div class="rule-item" id="${prefix}-${idx}">
+    <input type="text" placeholder="${esc(placeholder)}" value="${esc(value)}">
+    <button class="remove-btn" data-prefix="${prefix}" data-idx="${idx}">×</button>
+  </div>`;
 }
 
-function syncSlider(el) {
-  el.style.setProperty('--pct', el.value + '%');
+// Bind existing DOM rule items to appState key (dot-notation: 'cot.rules')
+function bindRuleList(listId, prefix, stateKey, placeholder) {
+  const container = document.getElementById(listId);
+  if (!container) return;
+  container.querySelectorAll('.rule-item').forEach((item, idx) => {
+    const input = item.querySelector('input');
+    const btn   = item.querySelector('.remove-btn');
+    input?.addEventListener('input', () => {
+      setNestedKey(stateKey, getDOMRuleValues(listId));
+      autosaveAndPreview();
+    });
+    btn?.addEventListener('click', () => {
+      item.remove();
+      setNestedKey(stateKey, getDOMRuleValues(listId));
+      autosaveAndPreview();
+    });
+  });
 }
 
-function getRuleValues(listId) {
-  return [...(document.querySelectorAll(`#${listId} input`) || [])].map(i => i.value.trim()).filter(Boolean);
-}
-
-// ─── Rule management ──────────────────────────────────────────────────────────
-function addRule(listId, prefix, placeholder = 'Enter...') {
-  const id = `${prefix}-${ruleCounters[prefix]++}`;
-  const item = document.createElement('div');
-  item.className = 'rule-item';
-  item.id = id;
-  item.innerHTML = `<input type="text" placeholder="${esc(placeholder)}"><button class="remove-btn" data-target="${id}">×</button>`;
-  document.getElementById(listId).appendChild(item);
-  item.querySelector('.remove-btn').addEventListener('click', () => { item.remove(); scheduleAutosave(); updatePreview(); });
-  item.querySelector('input').addEventListener('input', () => { scheduleAutosave(); updatePreview(); });
-  item.querySelector('input').focus();
-  scheduleAutosave(); updatePreview();
-}
-
-// ─── Few-shot management ─────────────────────────────────────────────────────
-function addFewShot() {
-  const n = ++shotCounter;
-  const id = `shot-${n}`;
+// Append a new rule item to a live DOM list
+function appendRuleItem(listId, prefix, idx, value, stateKey, placeholder) {
+  const container = document.getElementById(listId);
+  if (!container) return;
   const div = document.createElement('div');
-  div.className = 'few-shot-pair';
-  div.id = id;
-  div.innerHTML = `
-    <div class="few-shot-pair-header">
-      <span class="few-shot-label">Example ${n}</span>
-      <button class="remove-btn" data-target="${id}">×</button>
-    </div>
-    <div><label>Input</label><textarea placeholder="User input or question..."></textarea></div>
-    <div><label>Expected Output</label><textarea placeholder="Ideal response..."></textarea></div>`;
-  div.querySelector('.remove-btn').addEventListener('click', () => { div.remove(); scheduleAutosave(); updatePreview(); });
-  div.querySelectorAll('textarea').forEach(ta => ta.addEventListener('input', () => { scheduleAutosave(); updatePreview(); }));
-  document.getElementById('few-shot-list').appendChild(div);
-  scheduleAutosave(); updatePreview();
+  div.innerHTML = renderRuleItem(prefix, idx, value, placeholder);
+  const item = div.firstElementChild;
+  container.appendChild(item);
+  const input = item.querySelector('input');
+  item.querySelector('.remove-btn').addEventListener('click', () => {
+    item.remove();
+    setNestedKey(stateKey, getDOMRuleValues(listId));
+    autosaveAndPreview();
+  });
+  input.addEventListener('input', () => {
+    setNestedKey(stateKey, getDOMRuleValues(listId));
+    autosaveAndPreview();
+  });
+  input.focus();
 }
 
-// ─── Render ───────────────────────────────────────────────────────────────────
+function getDOMRuleValues(listId) {
+  return [...(document.querySelectorAll(`#${listId} input`)||[])].map(i => i.value);
+}
+
+// Set a (possibly nested) key on appState: 'cot.rules' → appState.cot.rules
+function setNestedKey(key, value) {
+  const parts = key.split('.');
+  let obj = appState;
+  for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
+  obj[parts[parts.length - 1]] = value;
+}
+
+// ─── Few-shot helpers ─────────────────────────────────────────────────────────
+function renderFewShotPair(idx, shot) {
+  return `<div class="few-shot-pair" data-idx="${idx}">
+    <div class="few-shot-pair-header">
+      <span class="few-shot-label">Example ${idx + 1}</span>
+      <button class="remove-btn" data-idx="${idx}">×</button>
+    </div>
+    <div><label>Input</label><textarea placeholder="User input or question...">${esc(shot.input)}</textarea></div>
+    <div><label>Expected Output</label><textarea placeholder="Ideal response...">${esc(shot.output)}</textarea></div>
+  </div>`;
+}
+
+function bindFewShotList() {
+  document.querySelectorAll('#few-shot-list .few-shot-pair').forEach((pair, idx) => {
+    bindFewShotPair(pair, idx);
+  });
+}
+
+function bindFewShotPair(pair, idx) {
+  pair.querySelector('.remove-btn').addEventListener('click', () => {
+    pair.remove();
+    appState.fewShots = [...document.querySelectorAll('#few-shot-list .few-shot-pair')].map(p => {
+      const [a,b] = p.querySelectorAll('textarea');
+      return { input: a?.value||'', output: b?.value||'' };
+    });
+    autosaveAndPreview();
+  });
+  pair.querySelectorAll('textarea').forEach((ta, i) => {
+    ta.addEventListener('input', () => {
+      if (!appState.fewShots[idx]) appState.fewShots[idx] = { input:'', output:'' };
+      if (i === 0) appState.fewShots[idx].input  = ta.value;
+      else         appState.fewShots[idx].output = ta.value;
+      autosaveAndPreview();
+    });
+  });
+}
+
+// ─── Wizard render ────────────────────────────────────────────────────────────
 function renderAll() {
   renderSidebar();
   renderMain();
@@ -670,16 +798,14 @@ function renderAll() {
 function renderSidebar() {
   const container = document.getElementById('sidebar-steps');
   container.innerHTML = steps.map((step, i) => {
-    const isDone = i < currentStep;
+    const isDone   = i < currentStep;
     const isActive = i === currentStep;
     const cls = isActive ? 'active' : isDone ? 'done' : '';
-    const circleContent = isDone ? '✓' : (i + 1);
     return `<div class="sidebar-step ${cls}" data-step="${i}">
-      <div class="step-circle">${circleContent}</div>
+      <div class="step-circle">${isDone ? '✓' : (i + 1)}</div>
       <span class="step-name">${esc(step.title)}</span>
     </div>`;
   }).join('');
-
   container.querySelectorAll('.sidebar-step').forEach(el => {
     el.addEventListener('click', () => goTo(parseInt(el.dataset.step)));
   });
@@ -689,58 +815,49 @@ function renderMain() {
   const main = document.getElementById('main-area');
   const step = steps[currentStep];
 
-  // Active card
   const activeHtml = `
     <div class="step-card active-card">
       <div class="step-card-header">
         <span class="step-card-icon">${step.icon}</span>
-        <span class="step-card-title">${esc(step.title)}</span>
+        <div>
+          <div class="step-card-title">${esc(step.title)}</div>
+          <div class="step-card-sub">Step ${currentStep + 1} of ${steps.length} — define what you want the model to do.</div>
+        </div>
         <span class="editing-badge">Editing</span>
       </div>
       <div class="step-card-body" id="active-step-body">
         ${step.render()}
       </div>
       <div class="step-card-nav">
-        <button class="btn btn-ghost btn-sm" id="btn-back" ${currentStep === 0 ? 'disabled style="opacity:0.4"' : ''}>← Back</button>
-        <span style="font-size:0.75rem;color:var(--muted)">Step ${currentStep + 1} of ${steps.length}</span>
-        <button class="btn btn-primary btn-sm" id="btn-next">${currentStep === steps.length - 1 ? 'Finish ✓' : 'Next →'}</button>
+        <button class="btn btn-ghost btn-sm" id="btn-back" ${currentStep===0?'disabled':''}>${currentStep===0?'← Back':'← Back'}</button>
+        <button class="btn btn-primary btn-sm" id="btn-next">${currentStep===steps.length-1?'Finish ✓':'Next →'}</button>
       </div>
     </div>`;
 
-  // Summary cards for completed steps (steps before current)
   let summaryHtml = '';
   if (currentStep > 0) {
-    const completedSteps = steps.slice(0, currentStep);
-    // Group into pairs for 2-col grid
-    summaryHtml = `<div class="summary-grid">`;
-    completedSteps.forEach((s, i) => {
-      const stepIdx = i;
-      // Full-width for steps with long content (rules, examples, cot)
-      const fullWidth = ['rules', 'constraints', 'examples', 'cot'].includes(s.id) ? ' full-width' : '';
-      summaryHtml += `
-        <div class="summary-card${fullWidth}" data-step="${stepIdx}">
-          <div class="summary-card-header">
-            <span class="summary-card-icon">${s.icon}</span>
-            <span class="summary-card-title">${esc(s.title)}</span>
-          </div>
-          ${s.summary()}
-        </div>`;
-    });
-    summaryHtml += `</div>`;
+    summaryHtml = `<div class="summary-grid">` + steps.slice(0, currentStep).map((s, i) => {
+      const fullWidth = ['rules','constraints','examples','cot'].includes(s.id) ? ' full-width' : '';
+      return `<div class="summary-card${fullWidth}" data-step="${i}">
+        <div class="summary-card-header">
+          <span class="summary-card-icon">${s.icon}</span>
+          <span class="summary-card-title">${esc(s.title)}</span>
+          <span class="summary-done-badge">✓ done</span>
+        </div>
+        ${s.summary()}
+      </div>`;
+    }).join('') + `</div>`;
   }
 
   main.innerHTML = activeHtml + summaryHtml;
 
-  // Bind active step events
   step.bind();
 
-  // Nav buttons
   document.getElementById('btn-back').addEventListener('click', () => goTo(currentStep - 1));
   document.getElementById('btn-next').addEventListener('click', () => {
     if (currentStep < steps.length - 1) goTo(currentStep + 1);
+    else showToast('Prompt complete! Copy or download it from the preview panel.');
   });
-
-  // Summary card navigation
   main.querySelectorAll('.summary-card').forEach(card => {
     card.addEventListener('click', () => goTo(parseInt(card.dataset.step)));
   });
@@ -748,188 +865,139 @@ function renderMain() {
 
 function goTo(n) {
   if (n < 0 || n >= steps.length) return;
-  // Persist DOM state of current active step before switching
-  // (state is already in the DOM since we read live; no extra capture needed)
+  flushStep(steps[currentStep].id);
   currentStep = n;
   renderAll();
   document.getElementById('main-area').scrollTop = 0;
 }
 
-// ─── buildPrompt ──────────────────────────────────────────────────────────────
+// ─── buildPrompt — reads from appState, never from DOM ───────────────────────
 function buildPrompt() {
-  const model = document.getElementById('target-model')?.value || 'claude';
+  const model  = appState.model || 'claude';
   const useXml = model === 'claude';
-  const lines = [];
+  const lines  = [];
+  const wrap   = (tag, content) => useXml ? `<${tag}>\n${content}\n</${tag}>` : content;
 
-  const wrap = (tag, content) => useXml ? `<${tag}>\n${content}\n</${tag}>` : content;
-
-  // ROLE
-  const role = document.getElementById('role-custom')?.value?.trim();
+  const role = (appState.role || '').trim();
   if (role) {
     lines.push(useXml ? wrap('role', role) : `ROLE:\n${role}`);
     lines.push('');
   }
 
-  // CONTEXT
-  const company = document.getElementById('ctx-company')?.value?.trim();
-  const domain = document.getElementById('ctx-domain')?.value?.trim();
-  const audience = document.getElementById('ctx-audience')?.value?.trim();
-  const extra = document.getElementById('ctx-extra')?.value?.trim();
+  const c = appState.ctx || {};
   const ctxParts = [];
-  if (company) ctxParts.push(`Company: ${company}`);
-  if (domain) ctxParts.push(`Domain: ${domain}`);
-  if (audience) ctxParts.push(`Audience: ${audience}`);
-  if (extra) ctxParts.push(extra);
+  if (c.company)  ctxParts.push(`Company: ${c.company}`);
+  if (c.domain)   ctxParts.push(`Domain: ${c.domain}`);
+  if (c.audience) ctxParts.push(`Audience: ${c.audience}`);
+  if (c.extra)    ctxParts.push(c.extra);
   if (ctxParts.length) {
     lines.push(useXml ? wrap('context', ctxParts.join('\n')) : `CONTEXT:\n${ctxParts.join('\n')}`);
     lines.push('');
   }
 
-  // OBJECTIVE
-  const activeTypeBtn = document.querySelector('#task-type-grid .task-type-btn.active');
-  const objDesc = document.getElementById('obj-description')?.value?.trim();
-  if (activeTypeBtn || objDesc) {
-    const parts = [];
-    if (activeTypeBtn) parts.push(`Task type: ${activeTypeBtn.textContent}`);
-    if (objDesc) parts.push(objDesc);
-    lines.push(useXml ? wrap('objective', parts.join('\n')) : `OBJECTIVE:\n${parts.join('\n')}`);
+  const obj = appState.objective || {};
+  const typeLabel = TASK_TYPES.find(t => t.value === obj.type)?.label;
+  const objParts  = [];
+  if (typeLabel) objParts.push(`Task type: ${typeLabel}`);
+  if ((obj.description||'').trim()) objParts.push(obj.description.trim());
+  if (objParts.length) {
+    lines.push(useXml ? wrap('objective', objParts.join('\n')) : `OBJECTIVE:\n${objParts.join('\n')}`);
     lines.push('');
   }
 
-  // POSITIVE RULES
-  const posRules = getRuleValues('positive-rules');
+  const posRules = (appState.positiveRules || []).filter(Boolean);
   if (posRules.length) {
-    const content = posRules.map(r => `• ${r}`).join('\n');
-    lines.push(useXml ? wrap('instructions', content) : `INSTRUCTIONS (Do):\n${content}`);
+    lines.push(useXml ? wrap('instructions', posRules.map(r=>`• ${r}`).join('\n')) : `INSTRUCTIONS (Do):\n${posRules.map(r=>`• ${r}`).join('\n')}`);
     lines.push('');
   }
 
-  // NEGATIVE CONSTRAINTS
-  const negRules = getRuleValues('negative-rules');
+  const negRules = (appState.negativeRules || []).filter(Boolean);
   if (negRules.length) {
-    const content = negRules.map(r => `• ${r}`).join('\n');
-    lines.push(useXml ? wrap('constraints', content) : `CONSTRAINTS (Don\'t):\n${content}`);
+    lines.push(useXml ? wrap('constraints', negRules.map(r=>`• ${r}`).join('\n')) : `CONSTRAINTS (Don't):\n${negRules.map(r=>`• ${r}`).join('\n')}`);
     lines.push('');
   }
 
-  // TONE
-  const formalityVal = parseInt(document.getElementById('tone-formality')?.value || 50);
-  const detailVal = parseInt(document.getElementById('tone-detail')?.value || 50);
-  const energyVal = parseInt(document.getElementById('tone-energy')?.value || 50);
-  const activeToneTags = [...(document.querySelectorAll('#tone-tags .tag.active') || [])].map(t => t.dataset.tag);
-
+  const tone = appState.tone || {};
+  const f = parseInt(tone.formality || 50), d = parseInt(tone.detail || 50), e = parseInt(tone.energy || 50);
   const toneDesc = [];
-  if (formalityVal < 30) toneDesc.push('formal and professional');
-  else if (formalityVal > 70) toneDesc.push('casual and conversational');
+  if (f < 30) toneDesc.push('formal and professional');
+  else if (f > 70) toneDesc.push('casual and conversational');
   else toneDesc.push('moderately professional');
-  if (detailVal < 30) toneDesc.push('concise');
-  else if (detailVal > 70) toneDesc.push('detailed and thorough');
-  if (energyVal > 70) toneDesc.push('enthusiastic');
-  if (activeToneTags.length) toneDesc.push(...activeToneTags.map(t => t.toLowerCase()));
-
-  const toneContent = `Write in a ${toneDesc.join(', ')} tone.`;
-  lines.push(useXml ? wrap('tone', toneContent) : `TONE:\n${toneContent}`);
+  if (d < 30) toneDesc.push('concise');
+  else if (d > 70) toneDesc.push('detailed and thorough');
+  if (e > 70) toneDesc.push('enthusiastic');
+  if ((tone.tags||[]).length) toneDesc.push(...tone.tags.map(t=>t.toLowerCase()));
+  lines.push(useXml ? wrap('tone', `Write in a ${toneDesc.join(', ')} tone.`) : `TONE:\nWrite in a ${toneDesc.join(', ')} tone.`);
   lines.push('');
 
-  // OUTPUT FORMAT
-  const fmt = document.getElementById('fmt-type')?.value || 'plain';
-  const fmtLength = document.getElementById('fmt-length')?.value;
-  const fmtTemplate = document.getElementById('fmt-template')?.value?.trim();
-  const fmtLabels = { plain: 'plain text', markdown: 'Markdown', json: 'JSON', bullet: 'bullet list', numbered: 'numbered list', table: 'table', html: 'HTML', template: 'the following template' };
-  const fmtParts = [`Format your response as ${fmtLabels[fmt] || fmt}.`];
-  if (fmtLength) fmtParts.push(`Length: ${fmtLength}.`);
-  if (fmtTemplate) fmtParts.push(`\nTemplate:\n${fmtTemplate}`);
-  const fmtContent = fmtParts.join(' ');
-  lines.push(useXml ? wrap('output_format', fmtContent) : `OUTPUT FORMAT:\n${fmtContent}`);
+  const fmt = appState.format || {};
+  const fmtLabels = { plain:'plain text', markdown:'Markdown', json:'JSON', bullet:'bullet list', numbered:'numbered list', table:'table', html:'HTML', template:'the following template' };
+  const fmtParts = [`Format your response as ${fmtLabels[fmt.type||'plain'] || fmt.type}.`];
+  if (fmt.length) fmtParts.push(`Length: ${fmt.length}.`);
+  if ((fmt.template||'').trim()) fmtParts.push(`\nTemplate:\n${fmt.template.trim()}`);
+  lines.push(useXml ? wrap('output_format', fmtParts.join(' ')) : `OUTPUT FORMAT:\n${fmtParts.join(' ')}`);
   lines.push('');
 
-  // FEW-SHOT EXAMPLES
-  const shots = [...(document.querySelectorAll('#few-shot-list .few-shot-pair') || [])];
-  const validShots = shots.map(s => {
-    const [inp, out] = s.querySelectorAll('textarea');
-    return { input: inp?.value?.trim() || '', output: out?.value?.trim() || '' };
-  }).filter(s => s.input || s.output);
-
-  if (validShots.length) {
-    const exContent = validShots.map((s, i) => `Example ${i + 1}:\nInput: ${s.input}\nOutput: ${s.output}`).join('\n\n');
+  const shots = (appState.fewShots || []).filter(s => s.input || s.output);
+  if (shots.length) {
+    const exContent = shots.map((s,i) => `Example ${i+1}:\nInput: ${s.input}\nOutput: ${s.output}`).join('\n\n');
     lines.push(useXml ? wrap('examples', exContent) : `EXAMPLES:\n${exContent}`);
     lines.push('');
   }
 
-  // CHAIN OF THOUGHT
-  const cotEnabled = document.getElementById('cot-enabled')?.checked;
-  if (cotEnabled) {
-    const cotStyle = document.getElementById('cot-style')?.value || 'think-step';
-    const cotCustom = document.getElementById('cot-custom')?.value?.trim();
-    const baseInstruction = cotStyle === 'custom' ? cotCustom : (COT_MAP[cotStyle] || COT_MAP['think-step']);
-
-    const cotRules = getRuleValues('cot-rules');
-    const cotConstraints = getRuleValues('cot-constraints');
-    const requiredSteps = [...(document.querySelectorAll('#cot-steps .tag.active') || [])].map(t => t.dataset.tag);
-    const separate = document.getElementById('cot-separate')?.checked;
-
-    const cotParts = [baseInstruction];
-    if (requiredSteps.length) cotParts.push(`\nYour reasoning must include these steps:\n${requiredSteps.map(s => `• ${s}`).join('\n')}`);
-    if (cotRules.length) cotParts.push(`\nReasoning rules:\n${cotRules.map(r => `• ${r}`).join('\n')}`);
-    if (cotConstraints.length) cotParts.push(`\nReasoning constraints:\n${cotConstraints.map(c => `• Do not: ${c}`).join('\n')}`);
-    if (separate) cotParts.push(`\nClearly separate your reasoning from your final answer using a divider or label (e.g. "Final Answer:").`);
-
-    const cotContent = cotParts.join('');
-    lines.push(useXml ? wrap('thinking_instruction', cotContent) : `REASONING PROCESS:\n${cotContent}`);
+  const cot = appState.cot || {};
+  if (cot.enabled) {
+    const base = cot.style === 'custom' ? (cot.custom||'').trim() : (COT_MAP[cot.style] || COT_MAP['think-step']);
+    const cotParts = [base];
+    if ((cot.steps||[]).length) cotParts.push(`\nYour reasoning must include these steps:\n${cot.steps.map(s=>`• ${s}`).join('\n')}`);
+    if ((cot.rules||[]).filter(Boolean).length) cotParts.push(`\nReasoning rules:\n${cot.rules.filter(Boolean).map(r=>`• ${r}`).join('\n')}`);
+    if ((cot.constraints||[]).filter(Boolean).length) cotParts.push(`\nReasoning constraints:\n${cot.constraints.filter(Boolean).map(c=>`• Do not: ${c}`).join('\n')}`);
+    if (cot.separate) cotParts.push(`\nClearly separate your reasoning from your final answer using a divider or label (e.g. "Final Answer:").`);
+    lines.push(useXml ? wrap('thinking_instruction', cotParts.join('')) : `REASONING PROCESS:\n${cotParts.join('')}`);
     lines.push('');
   }
 
-  // FALLBACK
-  const fallback = document.getElementById('fallback-type')?.value;
-  const fallbackCustom = document.getElementById('fallback-custom')?.value?.trim();
-  const fallbackText = fallback === 'custom' ? fallbackCustom : FALLBACK_MAP[fallback];
-  if (fallback && fallbackText) {
-    lines.push(useXml ? wrap('fallback', fallbackText) : `FALLBACK BEHAVIOR:\n${fallbackText}`);
+  const fb = appState.fallback || {};
+  const fbText = fb.type === 'custom' ? (fb.custom||'').trim() : FALLBACK_MAP[fb.type];
+  if (fb.type && fbText) {
+    lines.push(useXml ? wrap('fallback', fbText) : `FALLBACK BEHAVIOR:\n${fbText}`);
     lines.push('');
   }
 
-  // TASK PLACEHOLDER
   lines.push(useXml ? '<task>\n{{USER_INPUT_HERE}}\n</task>' : 'TASK:\n{{USER_INPUT_HERE}}');
-
   return lines.join('\n').trim();
 }
 
 // ─── Preview ──────────────────────────────────────────────────────────────────
 function updatePreview() {
   const prompt = buildPrompt();
-  const highlighted = syntaxHighlight(prompt);
-  document.getElementById('prompt-output').innerHTML = highlighted;
-  document.getElementById('char-count').textContent = prompt.length.toLocaleString();
+  document.getElementById('prompt-output').innerHTML = syntaxHighlight(prompt);
+  document.getElementById('char-count').textContent  = prompt.length.toLocaleString();
   document.getElementById('token-count').textContent = Math.round(prompt.length / 4).toLocaleString();
 }
 
 function syntaxHighlight(text) {
-  const escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-  // Colorize line by line: tag lines orange, content lines cream
+  const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return escaped.split('\n').map(line => {
-    if (/^&lt;\/?[\w_]+&gt;$/.test(line.trim())) {
-      return `<span class="xml-tag">${line}</span>`;
-    } else if (line.trim()) {
-      return `<span class="xml-content">${line}</span>`;
-    }
+    if (/^&lt;\/?[\w_]+&gt;$/.test(line.trim())) return `<span class="xml-tag">${line}</span>`;
+    if (line.trim()) return `<span class="xml-content">${line}</span>`;
     return line;
   }).join('\n');
 }
 
-// ─── Header subtitle ─────────────────────────────────────────────────────────
 function updateHeaderSubtitle() {
-  const model = document.getElementById('target-model')?.value || 'claude';
-  const role = document.getElementById('role-custom')?.value?.trim();
-  const parts = [MODEL_LABELS[model] || model];
-  if (role) parts.push(role.split(' ').slice(0, 5).join(' ') + (role.split(' ').length > 5 ? '…' : ''));
+  const name  = appState.promptName;
+  const model = MODEL_LABELS[appState.model] || appState.model;
+  const parts = [model];
+  if (name) parts.unshift(name);
+  else {
+    const role = (appState.role||'').trim();
+    if (role) parts.push(role.split(' ').slice(0,4).join(' ') + (role.split(' ').length>4?'…':''));
+  }
   document.getElementById('header-subtitle').textContent = parts.join(' · ');
 }
 
-// ─── Copy / Download ─────────────────────────────────────────────────────────
+// ─── Copy / Download ──────────────────────────────────────────────────────────
 function copyPrompt() {
   const text = buildPrompt();
   navigator.clipboard.writeText(text).then(() => {
@@ -940,7 +1008,7 @@ function copyPrompt() {
 }
 
 function downloadPrompt() {
-  triggerDownload(new Blob([buildPrompt()], { type: 'text/plain' }), 'prompt.txt');
+  triggerDownload(new Blob([buildPrompt()], { type:'text/plain' }), `${appState.promptName||'prompt'}.txt`);
 }
 
 function triggerDownload(blob, filename) {
@@ -952,6 +1020,11 @@ function triggerDownload(blob, filename) {
 }
 
 // ─── Auto-save ────────────────────────────────────────────────────────────────
+function autosaveAndPreview() {
+  updatePreview();
+  scheduleAutosave();
+}
+
 function scheduleAutosave() {
   clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(() => {
@@ -966,141 +1039,28 @@ function scheduleAutosave() {
 
 // ─── State capture / restore ─────────────────────────────────────────────────
 function captureState() {
-  const state = { version: 1 };
-  steps.forEach(step => Object.assign(state, step.read()));
-  return state;
+  // Flush the active step's DOM into appState before capturing
+  flushStep(steps[currentStep].id);
+  return { version: 1, ...JSON.parse(JSON.stringify(appState)) };
 }
 
 function restoreState(state) {
   if (!state || state.version !== 1) return;
-
-  // model
-  const modelEl = document.getElementById('target-model');
-  if (modelEl && state.model) {
-    modelEl.value = state.model;
-    const hint = document.getElementById('model-hint');
-    if (hint) hint.innerHTML = MODEL_HINTS[state.model] || MODEL_HINTS.generic;
-  }
-
-  // role
-  const roleEl = document.getElementById('role-custom');
-  if (roleEl && state.role != null) {
-    roleEl.value = state.role;
-    document.querySelectorAll('#role-presets .preset-btn').forEach(b => b.classList.remove('active'));
-  }
-
-  // context
-  const ctx = state.ctx || {};
-  ['company', 'domain', 'audience', 'extra'].forEach(k => {
-    const el = document.getElementById(`ctx-${k}`);
-    if (el) el.value = ctx[k] || '';
-  });
-
-  // objective
-  const obj = state.objective || {};
-  document.querySelectorAll('#task-type-grid .task-type-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.value === obj.type);
-  });
-  const objDesc = document.getElementById('obj-description');
-  if (objDesc) objDesc.value = obj.description || '';
-
-  // rules
-  rebuildRuleList('positive-rules', 'pos', state.positiveRules || [], 'Enter rule...');
-  rebuildRuleList('negative-rules', 'neg', state.negativeRules || [], 'Enter constraint...');
-
-  // tone
-  const tone = state.tone || {};
-  ['formality', 'detail', 'energy'].forEach(k => {
-    const el = document.getElementById(`tone-${k}`);
-    if (el && tone[k] != null) { el.value = tone[k]; syncSlider(el); }
-  });
-  document.querySelectorAll('#tone-tags .tag').forEach(tag => {
-    tag.classList.toggle('active', (tone.tags || []).includes(tag.dataset.tag));
-  });
-
-  // format
-  const fmt = state.format || {};
-  const fmtTypeEl = document.getElementById('fmt-type');
-  if (fmtTypeEl) {
-    fmtTypeEl.value = fmt.type || 'plain';
-    const fmtTemplateRow = document.getElementById('fmt-template-row');
-    if (fmtTemplateRow) fmtTemplateRow.style.display = fmt.type === 'template' ? '' : 'none';
-  }
-  const fmtLenEl = document.getElementById('fmt-length');
-  if (fmtLenEl) fmtLenEl.value = fmt.length || '';
-  const fmtTplEl = document.getElementById('fmt-template');
-  if (fmtTplEl) fmtTplEl.value = fmt.template || '';
-
-  // few-shot
-  const fsList = document.getElementById('few-shot-list');
-  if (fsList) {
-    fsList.innerHTML = '';
-    shotCounter = 0;
-    (state.fewShots || []).forEach(shot => {
-      addFewShot();
-      const pairs = fsList.querySelectorAll('.few-shot-pair');
-      const last = pairs[pairs.length - 1];
-      const [a, b] = last.querySelectorAll('textarea');
-      if (a) a.value = shot.input || '';
-      if (b) b.value = shot.output || '';
-    });
-  }
-
-  // cot
-  const cot = state.cot || {};
-  const cotEnabled = document.getElementById('cot-enabled');
-  if (cotEnabled) {
-    cotEnabled.checked = !!cot.enabled;
-    const cotOptions = document.getElementById('cot-options');
-    if (cotOptions) cotOptions.style.display = cot.enabled ? 'flex' : 'none';
-  }
-  const cotStyleEl = document.getElementById('cot-style');
-  if (cotStyleEl) {
-    cotStyleEl.value = cot.style || 'think-step';
-    const customRow = document.getElementById('cot-custom-row');
-    if (customRow) customRow.style.display = cotStyleEl.value === 'custom' ? '' : 'none';
-  }
-  const cotCustomEl = document.getElementById('cot-custom');
-  if (cotCustomEl) cotCustomEl.value = cot.custom || '';
-  rebuildRuleList('cot-rules', 'cotr', cot.rules || [], 'e.g. Always verify numerical claims before concluding');
-  rebuildRuleList('cot-constraints', 'cotc', cot.constraints || [], 'e.g. Do not jump to conclusions without evidence');
-  document.querySelectorAll('#cot-steps .tag').forEach(tag => {
-    tag.classList.toggle('active', (cot.steps || []).includes(tag.dataset.tag));
-  });
-  const cotSepEl = document.getElementById('cot-separate');
-  if (cotSepEl) cotSepEl.checked = !!cot.separate;
-
-  // fallback
-  const fb = state.fallback || {};
-  const fbTypeEl = document.getElementById('fallback-type');
-  if (fbTypeEl) {
-    fbTypeEl.value = fb.type || '';
-    const fbCustomRow = document.getElementById('fallback-custom-row');
-    if (fbCustomRow) fbCustomRow.style.display = fb.type === 'custom' ? '' : 'none';
-  }
-  const fbCustomEl = document.getElementById('fallback-custom');
-  if (fbCustomEl) fbCustomEl.value = fb.custom || '';
-
-  updateHeaderSubtitle();
-  updatePreview();
-}
-
-function rebuildRuleList(listId, prefix, values, placeholder) {
-  const container = document.getElementById(listId);
-  if (!container) return;
-  container.innerHTML = '';
-  ruleCounters[prefix] = 0;
-  values.forEach(val => {
-    const id = `${prefix}-${ruleCounters[prefix]++}`;
-    const item = document.createElement('div');
-    item.className = 'rule-item';
-    item.id = id;
-    item.innerHTML = `<input type="text" placeholder="${esc(placeholder)}"><button class="remove-btn">×</button>`;
-    item.querySelector('.remove-btn').addEventListener('click', () => { item.remove(); scheduleAutosave(); updatePreview(); });
-    item.querySelector('input').addEventListener('input', () => { scheduleAutosave(); updatePreview(); });
-    item.querySelector('input').value = val;
-    container.appendChild(item);
-  });
+  appState = {
+    model:         state.model         || 'claude',
+    role:          state.role          || '',
+    ctx:           { company:'', domain:'', audience:'', extra:'', ...(state.ctx||{}) },
+    objective:     { type:'', description:'', ...(state.objective||{}) },
+    positiveRules: Array.isArray(state.positiveRules) ? state.positiveRules : [],
+    negativeRules: Array.isArray(state.negativeRules) ? state.negativeRules : [],
+    tone:          { formality:'50', detail:'50', energy:'50', tags:[], ...(state.tone||{}) },
+    format:        { type:'plain', length:'', template:'', ...(state.format||{}) },
+    fewShots:      Array.isArray(state.fewShots) ? state.fewShots : [],
+    cot:           { enabled:false, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false, ...(state.cot||{}) },
+    fallback:      { type:'', custom:'', ...(state.fallback||{}) },
+    promptName:    state.promptName || '',
+  };
+  renderAll();
 }
 
 // ─── Named saves ─────────────────────────────────────────────────────────────
@@ -1110,7 +1070,7 @@ function getSaves() {
 function setSaves(saves) { localStorage.setItem(SAVES_KEY, JSON.stringify(saves)); }
 
 function savePromptAs() {
-  document.getElementById('save-name-input').value = '';
+  document.getElementById('save-name-input').value = appState.promptName || '';
   document.getElementById('savename-modal').classList.add('open');
   setTimeout(() => document.getElementById('save-name-input').focus(), 80);
 }
@@ -1119,8 +1079,10 @@ function closeSaveNameModal() { document.getElementById('savename-modal').classL
 function confirmSave() {
   const name = document.getElementById('save-name-input').value.trim();
   if (!name) { document.getElementById('save-name-input').focus(); return; }
+  appState.promptName = name;
+  updateHeaderSubtitle();
   const saves = getSaves();
-  const idx = saves.findIndex(s => s.name === name);
+  const idx   = saves.findIndex(s => s.name === name);
   const entry = { name, savedAt: new Date().toISOString(), state: captureState() };
   if (idx >= 0) saves[idx] = entry; else saves.unshift(entry);
   setSaves(saves);
@@ -1134,11 +1096,20 @@ function deleteSave(name) {
   renderSavedList();
 }
 
+function duplicateSave(name) {
+  const save = getSaves().find(s => s.name === name);
+  if (!save) return;
+  const newName = `${save.name} (copy)`;
+  const saves   = getSaves();
+  saves.unshift({ name: newName, savedAt: new Date().toISOString(), state: { ...save.state, promptName: newName } });
+  setSaves(saves);
+  renderSavedList();
+  showToast(`Duplicated as "${newName}"`);
+}
+
 function loadSave(name) {
   const save = getSaves().find(s => s.name === name);
   if (!save) return;
-  // Re-render current step to ensure DOM elements exist for the active step
-  renderAll();
   restoreState(save.state);
   closeSavedModal();
   showToast(`Loaded "${name}"`);
@@ -1147,10 +1118,10 @@ function loadSave(name) {
 function exportSaveAsJSON(name) {
   const save = getSaves().find(s => s.name === name);
   if (!save) return;
-  triggerDownload(new Blob([JSON.stringify(save.state, null, 2)], { type: 'application/json' }), `${name.replace(/\s+/g, '_')}.json`);
+  triggerDownload(new Blob([JSON.stringify(save.state, null, 2)], { type:'application/json' }), `${name.replace(/\s+/g,'_')}.json`);
 }
 
-function openSavedModal() { renderSavedList(); document.getElementById('saved-modal').classList.add('open'); }
+function openSavedModal()  { renderSavedList(); document.getElementById('saved-modal').classList.add('open'); }
 function closeSavedModal() { document.getElementById('saved-modal').classList.remove('open'); }
 
 function renderSavedList() {
@@ -1161,36 +1132,34 @@ function renderSavedList() {
     return;
   }
   container.innerHTML = `<div class="saved-list">${saves.map(s => {
-    const date = new Date(s.savedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-    const model = s.state?.model || 'generic';
+    const date     = new Date(s.savedAt).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
+    const model    = s.state?.model || 'generic';
     const safeName = esc(s.name);
-    return `<div class="saved-item">
-      <div class="saved-item-info" data-load="${safeName}">
+    return `<div class="saved-item" data-name="${safeName}">
+      <div class="saved-item-info">
         <div class="saved-item-name">${safeName}</div>
         <div class="saved-item-meta">${date} · ${model}</div>
       </div>
       <div class="saved-item-actions">
-        <button class="icon-btn" title="Load" data-load="${safeName}">↩</button>
-        <button class="icon-btn" title="Export .json" data-export="${safeName}">⬇</button>
-        <button class="icon-btn danger" title="Delete" data-delete="${safeName}">🗑</button>
+        <button class="icon-btn" title="Load" data-action="load">↩ Load</button>
+        <button class="icon-btn" title="Duplicate" data-action="dupe">⧉ Dupe</button>
+        <button class="icon-btn" title="Export .json" data-action="export">⬇ JSON</button>
+        <button class="icon-btn danger" title="Delete" data-action="delete">🗑</button>
       </div>
     </div>`;
   }).join('')}</div>`;
 
-  // Attach events after render to avoid inline handlers with escaped names
-  container.querySelectorAll('[data-load]').forEach(el => {
-    el.addEventListener('click', () => loadSave(saves.find(s => esc(s.name) === el.dataset.load)?.name || el.dataset.load));
-  });
-  container.querySelectorAll('[data-export]').forEach(el => {
-    el.addEventListener('click', () => exportSaveAsJSON(saves.find(s => esc(s.name) === el.dataset.export)?.name || el.dataset.export));
-  });
-  container.querySelectorAll('[data-delete]').forEach(el => {
-    el.addEventListener('click', () => deleteSave(saves.find(s => esc(s.name) === el.dataset.delete)?.name || el.dataset.delete));
+  container.querySelectorAll('.saved-item').forEach(item => {
+    const name = saves.find(s => esc(s.name) === item.dataset.name)?.name || item.dataset.name;
+    item.querySelector('[data-action="load"]').addEventListener('click',   () => loadSave(name));
+    item.querySelector('[data-action="dupe"]').addEventListener('click',   () => duplicateSave(name));
+    item.querySelector('[data-action="export"]').addEventListener('click', () => exportSaveAsJSON(name));
+    item.querySelector('[data-action="delete"]').addEventListener('click', () => deleteSave(name));
   });
 }
 
 // ─── Upload ───────────────────────────────────────────────────────────────────
-function openUploadModal() { document.getElementById('upload-modal').classList.add('open'); }
+function openUploadModal()  { document.getElementById('upload-modal').classList.add('open'); }
 function closeUploadModal() {
   document.getElementById('upload-modal').classList.remove('open');
   document.getElementById('upload-error').style.display = 'none';
@@ -1209,7 +1178,6 @@ function readUploadedFile(file) {
     try {
       const state = JSON.parse(e.target.result);
       if (state.version !== 1) throw new Error('Unrecognized file format.');
-      renderAll();
       restoreState(state);
       closeUploadModal();
       showToast('Prompt loaded from file');
@@ -1226,8 +1194,8 @@ function showUploadError(msg) {
   el.style.display = '';
 }
 
-function onDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
-function onDragLeave() { document.getElementById('upload-zone').classList.remove('drag-over'); }
+function onDragOver(e)  { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+function onDragLeave()  { document.getElementById('upload-zone').classList.remove('drag-over'); }
 function onDrop(e) {
   e.preventDefault();
   document.getElementById('upload-zone').classList.remove('drag-over');
@@ -1235,9 +1203,30 @@ function onDrop(e) {
   if (file) readUploadedFile(file);
 }
 
-// ─── Export current state as JSON ─────────────────────────────────────────────
+// ─── Export JSON ──────────────────────────────────────────────────────────────
 function exportJSON() {
-  triggerDownload(new Blob([JSON.stringify(captureState(), null, 2)], { type: 'application/json' }), 'prompt.json');
+  triggerDownload(new Blob([JSON.stringify(captureState(), null, 2)], { type:'application/json' }), `${appState.promptName||'prompt'}.json`);
+}
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+function resetAll() {
+  if (!confirm('Clear all fields and start over?')) return;
+  localStorage.removeItem(AUTOSAVE_KEY);
+  appState = {
+    model:'claude', role:'',
+    ctx:{ company:'', domain:'', audience:'', extra:'' },
+    objective:{ type:'', description:'' },
+    positiveRules:[], negativeRules:[],
+    tone:{ formality:'50', detail:'50', energy:'50', tags:[] },
+    format:{ type:'plain', length:'', template:'' },
+    fewShots:[],
+    cot:{ enabled:false, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false },
+    fallback:{ type:'', custom:'' },
+    promptName:'',
+  };
+  currentStep = 0;
+  renderAll();
+  showToast('Cleared — starting fresh');
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -1251,46 +1240,49 @@ function showToast(msg) {
   toast.textContent = msg;
   toast.classList.add('show');
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => toast.classList.remove('show'), 2200);
+  toast._t = setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Wire up static header buttons
   document.getElementById('btn-saved').addEventListener('click', openSavedModal);
   document.getElementById('btn-save').addEventListener('click', savePromptAs);
   document.getElementById('btn-export').addEventListener('click', exportJSON);
   document.getElementById('btn-upload').addEventListener('click', openUploadModal);
   document.getElementById('btn-copy').addEventListener('click', copyPrompt);
   document.getElementById('btn-download').addEventListener('click', downloadPrompt);
+  document.getElementById('btn-reset').addEventListener('click', resetAll);
 
   document.getElementById('save-name-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') confirmSave();
   });
 
-  // Close modals on overlay click
-  document.getElementById('saved-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSavedModal(); });
-  document.getElementById('upload-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeUploadModal(); });
-  document.getElementById('savename-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSaveNameModal(); });
+  document.getElementById('saved-modal').addEventListener('click',    e => { if (e.target===e.currentTarget) closeSavedModal(); });
+  document.getElementById('upload-modal').addEventListener('click',   e => { if (e.target===e.currentTarget) closeUploadModal(); });
+  document.getElementById('savename-modal').addEventListener('click', e => { if (e.target===e.currentTarget) closeSaveNameModal(); });
 
-  // Upload zone
   const uploadZone = document.getElementById('upload-zone');
-  uploadZone.addEventListener('dragover', onDragOver);
+  uploadZone.addEventListener('dragover',  onDragOver);
   uploadZone.addEventListener('dragleave', onDragLeave);
-  uploadZone.addEventListener('drop', onDrop);
-  uploadZone.addEventListener('click', () => document.getElementById('file-upload-input').click());
+  uploadZone.addEventListener('drop',      onDrop);
+  uploadZone.addEventListener('click',     () => document.getElementById('file-upload-input').click());
   document.getElementById('file-upload-input').addEventListener('change', handleFileUpload);
 
-  // Initial render
-  renderAll();
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey||e.metaKey) && e.key === 's') { e.preventDefault(); savePromptAs(); }
+    if ((e.ctrlKey||e.metaKey) && e.key === 'c' && e.shiftKey) { e.preventDefault(); copyPrompt(); }
+    if (e.key === 'ArrowRight' && e.altKey) { e.preventDefault(); goTo(currentStep + 1); }
+    if (e.key === 'ArrowLeft'  && e.altKey) { e.preventDefault(); goTo(currentStep - 1); }
+  });
 
-  // Restore autosave if present
+  // Restore autosave or render fresh
   try {
     const raw = localStorage.getItem(AUTOSAVE_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      // Re-render so step 0 DOM is available before restoring
-      restoreState(saved);
+      if (saved?.version === 1) { restoreState(saved); return; }
     }
   } catch (e) {}
+  renderAll();
 });
