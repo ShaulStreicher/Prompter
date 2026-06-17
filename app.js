@@ -1041,7 +1041,7 @@ function captureState() {
 }
 
 function restoreState(state) {
-  if (!state || state.version !== 1) return;
+  if (!state) return;
   appState = {
     model:         state.model         || 'claude',
     role:          state.role          || '',
@@ -1193,8 +1193,15 @@ function toggleVersionHistory(si, save) {
     }).join('');
     el.querySelectorAll('.version-restore-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const v = save.versions[parseInt(btn.dataset.vi)];
-        if (v) { restoreState(v.state); closeSavedModal(); showToast('Version restored'); }
+        const freshSave = getSaves().find(s => s.name === save.name);
+        const v = freshSave && freshSave.versions && freshSave.versions[parseInt(btn.dataset.vi)];
+        if (v && v.state && v.state.version === 1) {
+          restoreState(v.state);
+          closeSavedModal();
+          showToast('Version restored');
+        } else {
+          showToast('Could not restore — version data missing');
+        }
       });
     });
   }
