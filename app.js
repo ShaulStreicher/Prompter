@@ -1355,7 +1355,7 @@ function broadcastState() {
   clearTimeout(broadcastTimer);
   broadcastTimer = setTimeout(() => {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'state-sync', state: captureState() }));
+      ws.send(JSON.stringify({ type: 'state-sync', promptName: appState.promptName, state: captureState() }));
     }
   }, 500);
 }
@@ -1421,6 +1421,12 @@ function handleWsMessage(msg) {
   } else if (msg.type === 'error') {
     showToast('Collab error: ' + msg.message);
   } else if (msg.type === 'state-update') {
+    const myName   = appState.promptName || '';
+    const peerName = msg.promptName      || '';
+    if (myName !== peerName) {
+      showToast(`Peer is editing "${peerName || 'untitled'}" — your prompt is unchanged`);
+      return;
+    }
     isSyncing = true;
     restoreState(msg.state);
     isSyncing = false;

@@ -45,7 +45,7 @@ wss.on('connection', (ws) => {
 
     } else if (msg.type === 'state-sync') {
       const room = ws._roomId ? rooms.get(ws._roomId) : null;
-      if (room) broadcast(room, ws, { type: 'state-update', state: msg.state });
+      if (room) broadcast(room, ws, { type: 'state-update', promptName: msg.promptName, state: msg.state });
     }
   });
 
