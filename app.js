@@ -101,12 +101,10 @@ const FACTS_KEY = 'promptbuilder_facts';
 let appState = {
   model: 'claude',
   role: '',
-  persona: { description: '', techLevel: '50', goals: '', painPoints: '', tags: [] },
   ctx: { company: '', domain: '', audience: '', extra: '' },
   objective: { type: '', description: '' },
   positiveRules: [],
   negativeRules: [],
-  glossary: [],
   tone: { formality: '50', detail: '50', energy: '50', tags: [] },
   format: { type: 'plain', length: '', template: '' },
   fewShots: [],
@@ -213,74 +211,7 @@ const steps = [
     },
   },
 
-  // ── 3. Persona ───────────────────────────────────────────────────────────
-  {
-    id: 'persona', title: 'Persona', icon: '👤',
-    render() {
-      const p = appState.persona;
-      const PERSONA_TAGS = ['Non-technical','Power user','Decision maker','End user','Developer','Executive','Student','Researcher'];
-      const tagsHtml = PERSONA_TAGS.map(t =>
-        `<span class="tag ${p.tags.includes(t)?'active':''}" data-tag="${esc(t)}">${esc(t)}</span>`
-      ).join('');
-      return `
-        <div>
-          <label>Who is the AI talking to?</label>
-          <textarea id="persona-description" rows="3" placeholder="e.g. A mid-level marketing manager at a B2B SaaS company who wants help writing campaign copy...">${esc(p.description)}</textarea>
-        </div>
-        <div class="tone-row">
-          <div class="tone-slider-row">
-            <span>Beginner</span>
-            <input type="range" id="persona-tech" min="0" max="100" value="${p.techLevel}" style="--pct:${p.techLevel}%">
-            <span>Expert</span>
-          </div>
-        </div>
-        <div>
-          <label>Goals <span style="color:var(--muted);font-weight:400">(what they're trying to achieve)</span></label>
-          <textarea id="persona-goals" rows="2" placeholder="e.g. Increase qualified leads, reduce time spent on email...">${esc(p.goals)}</textarea>
-        </div>
-        <div>
-          <label>Pain points <span style="color:var(--muted);font-weight:400">(frustrations or blockers)</span></label>
-          <textarea id="persona-pain" rows="2" placeholder="e.g. Struggles with technical jargon, limited budget, tight deadlines...">${esc(p.painPoints)}</textarea>
-        </div>
-        <div>
-          <label>User type tags</label>
-          <div class="tag-picker" id="persona-tags">${tagsHtml}</div>
-        </div>`;
-    },
-    bind() {
-      document.getElementById('persona-description').addEventListener('input', e => { appState.persona.description = e.target.value; autosaveAndPreview(); });
-      document.getElementById('persona-goals').addEventListener('input', e => { appState.persona.goals = e.target.value; autosaveAndPreview(); });
-      document.getElementById('persona-pain').addEventListener('input', e => { appState.persona.painPoints = e.target.value; autosaveAndPreview(); });
-      const techEl = document.getElementById('persona-tech');
-      techEl.addEventListener('input', () => { appState.persona.techLevel = techEl.value; syncSlider(techEl); autosaveAndPreview(); });
-      document.querySelectorAll('#persona-tags .tag').forEach(tag => {
-        tag.addEventListener('click', () => {
-          tag.classList.toggle('active');
-          appState.persona.tags = [...document.querySelectorAll('#persona-tags .tag.active')].map(t => t.dataset.tag);
-          autosaveAndPreview();
-        });
-      });
-    },
-    flush() {
-      const d = document.getElementById('persona-description'); if (d) appState.persona.description = d.value;
-      const g = document.getElementById('persona-goals');       if (g) appState.persona.goals = g.value;
-      const pp= document.getElementById('persona-pain');        if (pp) appState.persona.painPoints = pp.value;
-      const t = document.getElementById('persona-tech');        if (t) appState.persona.techLevel = t.value;
-      const ta= document.querySelectorAll('#persona-tags .tag.active');
-      if (ta.length) appState.persona.tags = [...ta].map(x => x.dataset.tag);
-    },
-    summary() {
-      const p = appState.persona;
-      const desc = (p.description||'').trim();
-      const tech = parseInt(p.techLevel||50);
-      const techLabel = tech < 30 ? 'Beginner' : tech > 70 ? 'Expert' : 'Intermediate';
-      const tagParts = [techLabel, ...p.tags];
-      if (!desc && !p.tags.length) return `<div class="summary-content muted">Not set</div>`;
-      return `<div class="summary-tags">${tagParts.map(t=>`<span class="summary-tag">${esc(t)}</span>`).join('')}</div>${desc?`<div class="summary-content" style="margin-top:6px">${esc(desc.slice(0,70))}${desc.length>70?'…':''}</div>`:''}`;
-    },
-  },
-
-  // ── 4. Context ───────────────────────────────────────────────────────────
+  // ── 3. Context ───────────────────────────────────────────────────────────
   {
     id: 'context', title: 'Context', icon: '🏢',
     render() {
@@ -437,44 +368,7 @@ const steps = [
     },
   },
 
-  // ── 7. Glossary ──────────────────────────────────────────────────────────
-  {
-    id: 'glossary', title: 'Glossary', icon: '📖',
-    render() {
-      const items = (appState.glossary||[]).map((g,i) => renderGlossaryItem(i, g)).join('');
-      return `
-        <label>Define terms the AI must know and use consistently</label>
-        <div id="glossary-list" style="display:flex;flex-direction:column;gap:8px;">${items}</div>
-        <button class="add-btn" id="add-glossary-item">+ Add term</button>`;
-    },
-    bind() {
-      bindGlossaryList();
-      document.getElementById('add-glossary-item').addEventListener('click', () => {
-        appState.glossary.push({ term: '', definition: '' });
-        const idx = appState.glossary.length - 1;
-        const list = document.getElementById('glossary-list');
-        const div = document.createElement('div');
-        div.innerHTML = renderGlossaryItem(idx, { term: '', definition: '' });
-        list.appendChild(div.firstElementChild);
-        bindGlossaryItem(list.lastElementChild, idx);
-        list.lastElementChild.querySelector('.glossary-term').focus();
-        autosaveAndPreview();
-      });
-    },
-    flush() {
-      appState.glossary = [...(document.querySelectorAll('#glossary-list .glossary-item')||[])].map(item => ({
-        term: item.querySelector('.glossary-term')?.value || '',
-        definition: item.querySelector('.glossary-def')?.value || '',
-      }));
-    },
-    summary() {
-      const g = (appState.glossary||[]).filter(x => x.term);
-      if (!g.length) return `<div class="summary-content muted">No terms defined</div>`;
-      return `<div class="summary-content">${g.slice(0,3).map(x=>`<strong>${esc(x.term)}</strong>: ${esc((x.definition||'').slice(0,40))}${(x.definition||'').length>40?'…':''}`).join('<br>')}${g.length>3?`<br><em>+${g.length-3} more</em>`:''}</div>`;
-    },
-  },
-
-  // ── 8. Tone ──────────────────────────────────────────────────────────────
+  // ── 7. Tone ──────────────────────────────────────────────────────────────
   {
     id: 'tone', title: 'Tone', icon: '🎨',
     render() {
@@ -795,7 +689,7 @@ const steps = [
   },
 ];
 
-// ─── Glossary helpers ─────────────────────────────────────────────────────────
+// ─── Glossary item renderer (used by Facts Canvas only) ───────────────────────
 function renderGlossaryItem(idx, g) {
   return `<div class="glossary-item rule-item" data-idx="${idx}">
     <div style="display:flex;flex-direction:column;gap:5px;flex:1">
@@ -804,29 +698,6 @@ function renderGlossaryItem(idx, g) {
     </div>
     <button class="remove-btn" data-idx="${idx}">×</button>
   </div>`;
-}
-
-function bindGlossaryList() {
-  document.querySelectorAll('#glossary-list .glossary-item').forEach((item, idx) => bindGlossaryItem(item, idx));
-}
-
-function bindGlossaryItem(item, idx) {
-  item.querySelector('.remove-btn').addEventListener('click', () => {
-    item.remove();
-    appState.glossary = [...document.querySelectorAll('#glossary-list .glossary-item')].map(el => ({
-      term: el.querySelector('.glossary-term')?.value||'',
-      definition: el.querySelector('.glossary-def')?.value||'',
-    }));
-    autosaveAndPreview();
-  });
-  item.querySelectorAll('input').forEach(inp => {
-    inp.addEventListener('input', () => {
-      if (!appState.glossary[idx]) appState.glossary[idx] = { term:'', definition:'' };
-      if (inp.classList.contains('glossary-term')) appState.glossary[idx].term = inp.value;
-      else appState.glossary[idx].definition = inp.value;
-      autosaveAndPreview();
-    });
-  });
 }
 
 // ─── Rule list helpers ────────────────────────────────────────────────────────
@@ -1023,20 +894,6 @@ function buildPrompt() {
     lines.push('');
   }
 
-  // PERSONA
-  const p = appState.persona || {};
-  const personaParts = [];
-  if ((p.description||'').trim()) personaParts.push(p.description.trim());
-  const tech = parseInt(p.techLevel||50);
-  personaParts.push(`Technical level: ${tech<30?'Beginner':tech>70?'Expert':'Intermediate'}`);
-  if ((p.goals||'').trim())      personaParts.push(`Goals: ${p.goals.trim()}`);
-  if ((p.painPoints||'').trim()) personaParts.push(`Pain points: ${p.painPoints.trim()}`);
-  if ((p.tags||[]).length)       personaParts.push(`User type: ${p.tags.join(', ')}`);
-  if (p.description || (p.tags||[]).length) {
-    lines.push(useXml ? wrap('persona', personaParts.join('\n')) : `PERSONA (Target User):\n${personaParts.join('\n')}`);
-    lines.push('');
-  }
-
   const c = appState.ctx || {};
   const ctxParts = [];
   if (c.company)  ctxParts.push(`Company: ${c.company}`);
@@ -1067,14 +924,6 @@ function buildPrompt() {
   const negRules = (appState.negativeRules || []).filter(Boolean);
   if (negRules.length) {
     lines.push(useXml ? wrap('constraints', negRules.map(r=>`• ${r}`).join('\n')) : `CONSTRAINTS (Don't):\n${negRules.map(r=>`• ${r}`).join('\n')}`);
-    lines.push('');
-  }
-
-  // GLOSSARY
-  const glossary = (appState.glossary||[]).filter(g => g.term);
-  if (glossary.length) {
-    const glossaryContent = glossary.map(g => `${g.term}: ${g.definition}`).join('\n');
-    lines.push(useXml ? wrap('glossary', glossaryContent) : `GLOSSARY:\n${glossaryContent}`);
     lines.push('');
   }
 
@@ -1210,12 +1059,10 @@ function restoreState(state) {
   appState = {
     model:         state.model         || 'claude',
     role:          state.role          || '',
-    persona:       { description:'', techLevel:'50', goals:'', painPoints:'', tags:[], ...(state.persona||{}) },
     ctx:           { company:'', domain:'', audience:'', extra:'', ...(state.ctx||{}) },
     objective:     { type:'', description:'', ...(state.objective||{}) },
     positiveRules: Array.isArray(state.positiveRules) ? state.positiveRules : [],
     negativeRules: Array.isArray(state.negativeRules) ? state.negativeRules : [],
-    glossary:      Array.isArray(state.glossary) ? state.glossary : [],
     tone:          { formality:'50', detail:'50', energy:'50', tags:[], ...(state.tone||{}) },
     format:        { type:'plain', length:'', template:'', ...(state.format||{}) },
     fewShots:      Array.isArray(state.fewShots) ? state.fewShots : [],
@@ -1377,11 +1224,9 @@ function resetAll() {
   localStorage.removeItem(AUTOSAVE_KEY);
   appState = {
     model:'claude', role:'',
-    persona:{ description:'', techLevel:'50', goals:'', painPoints:'', tags:[] },
     ctx:{ company:'', domain:'', audience:'', extra:'' },
     objective:{ type:'', description:'' },
     positiveRules:[], negativeRules:[],
-    glossary:[],
     tone:{ formality:'50', detail:'50', energy:'50', tags:[] },
     format:{ type:'plain', length:'', template:'' },
     fewShots:[],
@@ -1402,12 +1247,24 @@ function resetAll() {
 let factsState = {
   facts: [],
   docs: [],
+  persona: { description: '', techLevel: '50', goals: '', painPoints: '', tags: [] },
+  glossary: [],
 };
 
 function loadFactsState() {
   try {
     const raw = localStorage.getItem(FACTS_KEY);
-    if (raw) factsState = { facts:[], docs:[], ...JSON.parse(raw) };
+    if (raw) {
+      const saved = JSON.parse(raw);
+      factsState = {
+        facts: [],
+        docs: [],
+        persona: { description:'', techLevel:'50', goals:'', painPoints:'', tags:[] },
+        glossary: [],
+        ...saved,
+        persona: { description:'', techLevel:'50', goals:'', painPoints:'', tags:[], ...(saved.persona||{}) },
+      };
+    }
   } catch(e) {}
 }
 
@@ -1435,35 +1292,97 @@ function renderFactsCanvas() {
 function renderFactsPersonaView() {
   const el = document.getElementById('facts-persona-view');
   if (!el) return;
-  const p = appState.persona || {};
-  if (!p.description && !(p.tags||[]).length && !p.goals) {
-    el.innerHTML = `<div class="muted" style="padding:12px 0">No persona set yet — go to the <strong>Persona</strong> step in the wizard.</div>`;
-    return;
-  }
-  const tech = parseInt(p.techLevel||50);
-  const rows = [
-    p.description && `<div class="ro-row"><span class="ro-key">Description</span><span class="ro-val">${esc(p.description)}</span></div>`,
-    `<div class="ro-row"><span class="ro-key">Tech level</span><span class="ro-val">${tech<30?'Beginner':tech>70?'Expert':'Intermediate'}</span></div>`,
-    p.goals && `<div class="ro-row"><span class="ro-key">Goals</span><span class="ro-val">${esc(p.goals)}</span></div>`,
-    p.painPoints && `<div class="ro-row"><span class="ro-key">Pain points</span><span class="ro-val">${esc(p.painPoints)}</span></div>`,
-    (p.tags||[]).length && `<div class="ro-row"><span class="ro-key">User type</span><span class="ro-val">${p.tags.map(t=>`<span class="summary-tag">${esc(t)}</span>`).join('')}</span></div>`,
-  ].filter(Boolean);
-  el.innerHTML = rows.join('');
+  const p = factsState.persona;
+  const PERSONA_TAGS = ['Non-technical','Power user','Decision maker','End user','Developer','Executive','Student','Researcher'];
+  const tagsHtml = PERSONA_TAGS.map(t =>
+    `<span class="tag ${(p.tags||[]).includes(t)?'active':''}" data-tag="${esc(t)}">${esc(t)}</span>`
+  ).join('');
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label>Who is the AI talking to?</label>
+        <textarea id="fp-description" rows="3" placeholder="e.g. A mid-level marketing manager at a B2B SaaS company...">${esc(p.description)}</textarea>
+      </div>
+      <div class="tone-row">
+        <div class="tone-slider-row">
+          <span>Beginner</span>
+          <input type="range" id="fp-tech" min="0" max="100" value="${p.techLevel||50}" style="--pct:${p.techLevel||50}%">
+          <span>Expert</span>
+        </div>
+      </div>
+      <div>
+        <label>Goals</label>
+        <textarea id="fp-goals" rows="2" placeholder="e.g. Increase qualified leads, reduce time spent on email...">${esc(p.goals)}</textarea>
+      </div>
+      <div>
+        <label>Pain points</label>
+        <textarea id="fp-pain" rows="2" placeholder="e.g. Struggles with technical jargon, tight deadlines...">${esc(p.painPoints)}</textarea>
+      </div>
+      <div>
+        <label>User type tags</label>
+        <div class="tag-picker" id="fp-tags">${tagsHtml}</div>
+      </div>
+    </div>`;
+
+  document.getElementById('fp-description').addEventListener('input', e => { factsState.persona.description = e.target.value; saveFactsState(); renderFactsPreview(); });
+  document.getElementById('fp-goals').addEventListener('input', e => { factsState.persona.goals = e.target.value; saveFactsState(); renderFactsPreview(); });
+  document.getElementById('fp-pain').addEventListener('input', e => { factsState.persona.painPoints = e.target.value; saveFactsState(); renderFactsPreview(); });
+  const techEl = document.getElementById('fp-tech');
+  techEl.addEventListener('input', () => { factsState.persona.techLevel = techEl.value; syncSlider(techEl); saveFactsState(); renderFactsPreview(); });
+  document.querySelectorAll('#fp-tags .tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      tag.classList.toggle('active');
+      factsState.persona.tags = [...document.querySelectorAll('#fp-tags .tag.active')].map(t => t.dataset.tag);
+      saveFactsState(); renderFactsPreview();
+    });
+  });
 }
 
 function renderFactsGlossaryView() {
   const el = document.getElementById('facts-glossary-view');
   if (!el) return;
-  const glossary = (appState.glossary||[]).filter(g => g.term);
-  if (!glossary.length) {
-    el.innerHTML = `<div class="muted" style="padding:12px 0">No glossary terms yet — go to the <strong>Glossary</strong> step in the wizard.</div>`;
-    return;
-  }
-  el.innerHTML = glossary.map(g => `
-    <div class="ro-row">
-      <span class="ro-key" style="font-weight:700">${esc(g.term)}</span>
-      <span class="ro-val">${esc(g.definition)}</span>
-    </div>`).join('');
+  const items = (factsState.glossary||[]).map((g,i) => renderGlossaryItem(i, g)).join('');
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div id="facts-glossary-list" style="display:flex;flex-direction:column;gap:8px;">${items}</div>
+      <button class="add-btn" id="add-facts-glossary-item">+ Add term</button>
+    </div>`;
+
+  bindFactsGlossaryList();
+  document.getElementById('add-facts-glossary-item').addEventListener('click', () => {
+    factsState.glossary.push({ term: '', definition: '' });
+    const idx = factsState.glossary.length - 1;
+    const list = document.getElementById('facts-glossary-list');
+    const div = document.createElement('div');
+    div.innerHTML = renderGlossaryItem(idx, { term: '', definition: '' });
+    list.appendChild(div.firstElementChild);
+    bindFactsGlossaryItem(list.lastElementChild, idx);
+    list.lastElementChild.querySelector('.glossary-term').focus();
+    saveFactsState(); renderFactsPreview();
+  });
+}
+
+function bindFactsGlossaryList() {
+  document.querySelectorAll('#facts-glossary-list .glossary-item').forEach((item, idx) => bindFactsGlossaryItem(item, idx));
+}
+
+function bindFactsGlossaryItem(item, idx) {
+  item.querySelector('.remove-btn').addEventListener('click', () => {
+    item.remove();
+    factsState.glossary = [...document.querySelectorAll('#facts-glossary-list .glossary-item')].map(el => ({
+      term: el.querySelector('.glossary-term')?.value||'',
+      definition: el.querySelector('.glossary-def')?.value||'',
+    }));
+    saveFactsState(); renderFactsPreview();
+  });
+  item.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      if (!factsState.glossary[idx]) factsState.glossary[idx] = { term:'', definition:'' };
+      if (inp.classList.contains('glossary-term')) factsState.glossary[idx].term = inp.value;
+      else factsState.glossary[idx].definition = inp.value;
+      saveFactsState(); renderFactsPreview();
+    });
+  });
 }
 
 function renderFactsList() {
@@ -1541,8 +1460,8 @@ function buildFactsOutput() {
     lines.push('');
   }
 
-  // Persona from main wizard (read-only reference)
-  const p = appState.persona || {};
+  // Persona
+  const p = factsState.persona || {};
   if ((p.description||'').trim() || (p.tags||[]).length) {
     const tech = parseInt(p.techLevel||50);
     lines.push('── PERSONA ─────────────────────────────────────');
@@ -1554,8 +1473,8 @@ function buildFactsOutput() {
     lines.push('');
   }
 
-  // Glossary from main wizard (read-only reference)
-  const glossary = (appState.glossary||[]).filter(g => g.term);
+  // Glossary
+  const glossary = (factsState.glossary||[]).filter(g => g.term);
   if (glossary.length) {
     lines.push('── GLOSSARY ────────────────────────────────────');
     glossary.forEach(g => lines.push(`${g.term}: ${g.definition}`));
