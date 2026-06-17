@@ -111,9 +111,10 @@ let appState = {
   promptName: '',
 };
 
-let currentStep   = 0;
-let autosaveTimer = null;
-let shotCounter   = 0;
+let currentStep        = 0;
+let autosaveTimer      = null;
+let shotCounter        = 0;
+let currentVersionLabel = ''; // e.g. 'v3' or '' for unsaved/new
 
 // ─── Collaboration ────────────────────────────────────────────────────────────
 const COLLAB_SERVER_KEY = 'promptbuilder_collab_server';
@@ -991,12 +992,13 @@ function updateHeaderSubtitle() {
   const name  = appState.promptName;
   const model = MODEL_LABELS[appState.model] || appState.model;
   const parts = [model];
-  if (name) parts.unshift(name);
-  else {
+  if (name) {
+    parts.unshift(currentVersionLabel ? `${name} · ${currentVersionLabel}` : name);
+  } else {
     const role = (appState.role||'').trim();
     if (role) parts.push(role.split(' ').slice(0,4).join(' ') + (role.split(' ').length>4?'...':''));
   }
-  document.getElementById('header-subtitle').textContent = parts.join(' - ');
+  document.getElementById('header-subtitle').textContent = parts.join(' · ');
 }
 
 // ─── Copy / Download ──────────────────────────────────────────────────────────
@@ -1099,7 +1101,10 @@ function confirmSave() {
   }
   setSaves(saves);
   closeSaveNameModal();
-  showSaveToast(name, saves.findIndex(s => s.name === name), 0);
+  const savedIdx = saves.findIndex(s => s.name === name);
+  currentVersionLabel = `v${saves[savedIdx]?.versions?.length || 1}`;
+  updateHeaderSubtitle();
+  showSaveToast(name, savedIdx, 0);
 }
 
 function deleteSave(name) {
@@ -1122,6 +1127,8 @@ function duplicateSave(name) {
 function loadSave(name) {
   const save = getSaves().find(s => s.name === name);
   if (!save) return;
+  const total = (save.versions || []).length;
+  currentVersionLabel = total ? `v${total}` : '';
   restoreState(save.state);
   closeSavedModal();
   showToast(`Loaded "${name}"`);
@@ -1201,10 +1208,13 @@ function toggleVersionHistory(si, save) {
       btn.addEventListener('click', () => {
         const freshSave = getSaves().find(s => s.name === save.name);
         const v = freshSave && freshSave.versions && freshSave.versions[parseInt(btn.dataset.vi)];
-        if (v && v.state && v.state.version === 1) {
+        if (v && v.state) {
+          const vi = parseInt(btn.dataset.vi);
+          const total = freshSave.versions.length;
+          currentVersionLabel = `v${total - vi}`;
           restoreState(v.state);
           closeSavedModal();
-          showToast('Version restored');
+          showToast(`Restored ${currentVersionLabel}`);
         } else {
           showToast('Could not restore — version data missing');
         }
@@ -1281,6 +1291,7 @@ function resetAll() {
     promptName:'',
   };
   currentStep = 0;
+  currentVersionLabel = '';
   renderAll();
   showToast('Cleared -- starting fresh');
 }
