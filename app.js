@@ -116,8 +116,14 @@ let autosaveTimer = null;
 let shotCounter   = 0;
 
 // ─── Collaboration ────────────────────────────────────────────────────────────
-const COLLAB_SERVER = 'https://prompter-4ej4.onrender.com'; // e.g. wss://prompter-collab.onrender.com
-const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:3001' : COLLAB_SERVER;
+const COLLAB_SERVER_KEY = 'promptbuilder_collab_server';
+function getCollabServer() {
+  if (window.location.hostname === 'localhost') return 'ws://localhost:3001';
+  return localStorage.getItem(COLLAB_SERVER_KEY) || '';
+}
+function setCollabServer(url) { localStorage.setItem(COLLAB_SERVER_KEY, url); }
+function clearCollabServer() { localStorage.removeItem(COLLAB_SERVER_KEY); }
+
 let ws = null, roomId = null, peerCount = 0, isSyncing = false;
 let broadcastTimer = null;
 
@@ -1365,7 +1371,7 @@ function connectCollab(code) {
 }
 
 function _doConnect(code) {
-  ws = new WebSocket(WS_URL);
+  ws = new WebSocket(getCollabServer());
   ws.onopen = () => {
     _reconnectAttempts = 0;
     const rejoin = code || roomId;
@@ -1457,7 +1463,16 @@ function updateCollabPeersDisplay() {
   if (el) el.textContent = `Peers: ${peerCount} online`;
 }
 
-function openCollabModal() { document.getElementById('collab-modal').classList.add('open'); }
+function openCollabModal() {
+  const modal = document.getElementById('collab-modal');
+  modal.classList.add('open');
+  const hasServer = !!getCollabServer();
+  document.getElementById('collab-setup-section').style.display  = hasServer ? 'none' : '';
+  document.getElementById('collab-main-section').style.display   = hasServer ? ''     : 'none';
+  if (hasServer) {
+    document.getElementById('collab-server-display').textContent = getCollabServer();
+  }
+}
 function closeCollabModal() { document.getElementById('collab-modal').classList.remove('open'); }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -1485,7 +1500,20 @@ document.addEventListener('DOMContentLoaded', () => {
   uploadZone.addEventListener('click',     () => document.getElementById('file-upload-input').click());
   document.getElementById('file-upload-input').addEventListener('change', handleFileUpload);
 
-  // collab
+  // collab — server setup
+  document.getElementById('btn-save-server').addEventListener('click', () => {
+    const url = document.getElementById('collab-server-input').value.trim().replace(/^https?:\/\//, m => m === 'https://' ? 'wss://' : 'ws://');
+    if (!url) return;
+    setCollabServer(url);
+    openCollabModal(); // re-render modal with main section
+  });
+  document.getElementById('btn-change-server').addEventListener('click', () => {
+    clearCollabServer();
+    if (ws) { _intentionalClose = true; clearTimeout(_reconnectTimer); ws.close(); }
+    openCollabModal();
+  });
+
+  // collab — room management
   document.getElementById('btn-collab').addEventListener('click', openCollabModal);
   document.getElementById('collab-modal-close').addEventListener('click', closeCollabModal);
   document.getElementById('collab-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCollabModal(); });

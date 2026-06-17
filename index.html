@@ -145,26 +145,45 @@
       <button class="modal-close" id="collab-modal-close">×</button>
     </div>
     <div class="modal-body" id="collab-modal-body">
-      <div id="collab-create-section">
-        <button class="btn btn-primary" id="btn-create-room" style="width:100%">Create new room</button>
+
+      <!-- Setup screen: shown when no server is configured -->
+      <div id="collab-setup-section">
+        <p class="collab-setup-intro">Collaboration requires your own WebSocket server.<br>Deploy the included <code>server.js</code> to Render, Railway, or any Node host, then paste the URL below.</p>
+        <label>Your server URL</label>
+        <input type="text" id="collab-server-input" placeholder="wss://my-prompter.onrender.com" style="font-family:monospace;font-size:0.85rem">
+        <button class="btn btn-primary" id="btn-save-server" style="width:100%;margin-top:8px">Save &amp; continue</button>
+        <p class="collab-setup-help">Need help? See the <a href="https://github.com/ShaulStreicher/Prompter#collaboration" target="_blank">README</a> for a step-by-step deployment guide.</p>
       </div>
-      <div class="collab-divider">— or —</div>
-      <div id="collab-join-section">
-        <label>Join with room code</label>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="collab-join-input" placeholder="e.g. ABC123" style="text-transform:uppercase;letter-spacing:2px">
-          <button class="btn btn-secondary" id="btn-join-room">Join</button>
+
+      <!-- Main screen: shown when server is configured -->
+      <div id="collab-main-section" style="display:none">
+        <div class="collab-server-bar">
+          <span class="collab-server-label">Server:</span>
+          <span class="collab-server-url" id="collab-server-display"></span>
+          <button class="btn btn-ghost btn-sm" id="btn-change-server">Change</button>
+        </div>
+        <div id="collab-create-section">
+          <button class="btn btn-primary" id="btn-create-room" style="width:100%">Create new room</button>
+        </div>
+        <div class="collab-divider">— or —</div>
+        <div id="collab-join-section">
+          <label>Join with room code</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="collab-join-input" placeholder="e.g. ABC123" style="text-transform:uppercase;letter-spacing:2px">
+            <button class="btn btn-secondary" id="btn-join-room">Join</button>
+          </div>
+        </div>
+        <div id="collab-room-section" style="display:none">
+          <div class="collab-room-info">
+            <div class="collab-room-code" id="collab-room-code"></div>
+            <button class="btn btn-ghost btn-sm" id="btn-copy-room-link">Copy link</button>
+          </div>
+          <div class="collab-status" id="collab-status">Waiting for peers...</div>
+          <div class="collab-peers" id="collab-peers">Peers: 0 online</div>
+          <button class="btn btn-ghost" id="btn-leave-room" style="width:100%;margin-top:8px">Leave room</button>
         </div>
       </div>
-      <div id="collab-room-section" style="display:none">
-        <div class="collab-room-info">
-          <div class="collab-room-code" id="collab-room-code"></div>
-          <button class="btn btn-ghost btn-sm" id="btn-copy-room-link">Copy link</button>
-        </div>
-        <div class="collab-status" id="collab-status">Waiting for peers...</div>
-        <div class="collab-peers" id="collab-peers">Peers: 0 online</div>
-        <button class="btn btn-ghost" id="btn-leave-room" style="width:100%;margin-top:8px">Leave room</button>
-      </div>
+
     </div>
   </div>
 </div>

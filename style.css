@@ -1131,3 +1131,38 @@ input[type="range"]::-webkit-slider-thumb {
   color: var(--success);
 }
 .saved-item-wrapper { display: flex; flex-direction: column; }
+
+/* ── COLLAB SETUP ── */
+.collab-setup-intro {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+.collab-setup-help {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 8px 0 0;
+  text-align: center;
+}
+.collab-setup-help a { color: var(--accent); }
+.collab-server-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+}
+.collab-server-label { color: var(--muted); flex-shrink: 0; }
+.collab-server-url {
+  flex: 1;
+  font-family: monospace;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
