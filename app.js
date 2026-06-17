@@ -95,17 +95,18 @@ const FALLBACK_MAP = {
   rephrase:     'If unclear, rephrase the question back to the user in your own words and ask for confirmation.',
 };
 
+const FACTS_KEY = 'promptbuilder_facts';
+
 // ─── Global in-memory state ───────────────────────────────────────────────────
-// This is the single source of truth. DOM fields sync INTO here on every
-// change; buildPrompt / captureState read FROM here, never from the DOM.
-// This fixes the wizard bug where only the active step's DOM exists.
 let appState = {
   model: 'claude',
   role: '',
+  persona: { description: '', techLevel: '50', goals: '', painPoints: '', tags: [] },
   ctx: { company: '', domain: '', audience: '', extra: '' },
   objective: { type: '', description: '' },
   positiveRules: [],
   negativeRules: [],
+  glossary: [],
   tone: { formality: '50', detail: '50', energy: '50', tags: [] },
   format: { type: 'plain', length: '', template: '' },
   fewShots: [],
@@ -212,7 +213,74 @@ const steps = [
     },
   },
 
-  // ── 3. Context ───────────────────────────────────────────────────────────
+  // ── 3. Persona ───────────────────────────────────────────────────────────
+  {
+    id: 'persona', title: 'Persona', icon: '👤',
+    render() {
+      const p = appState.persona;
+      const PERSONA_TAGS = ['Non-technical','Power user','Decision maker','End user','Developer','Executive','Student','Researcher'];
+      const tagsHtml = PERSONA_TAGS.map(t =>
+        `<span class="tag ${p.tags.includes(t)?'active':''}" data-tag="${esc(t)}">${esc(t)}</span>`
+      ).join('');
+      return `
+        <div>
+          <label>Who is the AI talking to?</label>
+          <textarea id="persona-description" rows="3" placeholder="e.g. A mid-level marketing manager at a B2B SaaS company who wants help writing campaign copy...">${esc(p.description)}</textarea>
+        </div>
+        <div class="tone-row">
+          <div class="tone-slider-row">
+            <span>Beginner</span>
+            <input type="range" id="persona-tech" min="0" max="100" value="${p.techLevel}" style="--pct:${p.techLevel}%">
+            <span>Expert</span>
+          </div>
+        </div>
+        <div>
+          <label>Goals <span style="color:var(--muted);font-weight:400">(what they're trying to achieve)</span></label>
+          <textarea id="persona-goals" rows="2" placeholder="e.g. Increase qualified leads, reduce time spent on email...">${esc(p.goals)}</textarea>
+        </div>
+        <div>
+          <label>Pain points <span style="color:var(--muted);font-weight:400">(frustrations or blockers)</span></label>
+          <textarea id="persona-pain" rows="2" placeholder="e.g. Struggles with technical jargon, limited budget, tight deadlines...">${esc(p.painPoints)}</textarea>
+        </div>
+        <div>
+          <label>User type tags</label>
+          <div class="tag-picker" id="persona-tags">${tagsHtml}</div>
+        </div>`;
+    },
+    bind() {
+      document.getElementById('persona-description').addEventListener('input', e => { appState.persona.description = e.target.value; autosaveAndPreview(); });
+      document.getElementById('persona-goals').addEventListener('input', e => { appState.persona.goals = e.target.value; autosaveAndPreview(); });
+      document.getElementById('persona-pain').addEventListener('input', e => { appState.persona.painPoints = e.target.value; autosaveAndPreview(); });
+      const techEl = document.getElementById('persona-tech');
+      techEl.addEventListener('input', () => { appState.persona.techLevel = techEl.value; syncSlider(techEl); autosaveAndPreview(); });
+      document.querySelectorAll('#persona-tags .tag').forEach(tag => {
+        tag.addEventListener('click', () => {
+          tag.classList.toggle('active');
+          appState.persona.tags = [...document.querySelectorAll('#persona-tags .tag.active')].map(t => t.dataset.tag);
+          autosaveAndPreview();
+        });
+      });
+    },
+    flush() {
+      const d = document.getElementById('persona-description'); if (d) appState.persona.description = d.value;
+      const g = document.getElementById('persona-goals');       if (g) appState.persona.goals = g.value;
+      const pp= document.getElementById('persona-pain');        if (pp) appState.persona.painPoints = pp.value;
+      const t = document.getElementById('persona-tech');        if (t) appState.persona.techLevel = t.value;
+      const ta= document.querySelectorAll('#persona-tags .tag.active');
+      if (ta.length) appState.persona.tags = [...ta].map(x => x.dataset.tag);
+    },
+    summary() {
+      const p = appState.persona;
+      const desc = (p.description||'').trim();
+      const tech = parseInt(p.techLevel||50);
+      const techLabel = tech < 30 ? 'Beginner' : tech > 70 ? 'Expert' : 'Intermediate';
+      const tagParts = [techLabel, ...p.tags];
+      if (!desc && !p.tags.length) return `<div class="summary-content muted">Not set</div>`;
+      return `<div class="summary-tags">${tagParts.map(t=>`<span class="summary-tag">${esc(t)}</span>`).join('')}</div>${desc?`<div class="summary-content" style="margin-top:6px">${esc(desc.slice(0,70))}${desc.length>70?'…':''}</div>`:''}`;
+    },
+  },
+
+  // ── 4. Context ───────────────────────────────────────────────────────────
   {
     id: 'context', title: 'Context', icon: '🏢',
     render() {
@@ -369,7 +437,44 @@ const steps = [
     },
   },
 
-  // ── 7. Tone ──────────────────────────────────────────────────────────────
+  // ── 7. Glossary ──────────────────────────────────────────────────────────
+  {
+    id: 'glossary', title: 'Glossary', icon: '📖',
+    render() {
+      const items = (appState.glossary||[]).map((g,i) => renderGlossaryItem(i, g)).join('');
+      return `
+        <label>Define terms the AI must know and use consistently</label>
+        <div id="glossary-list" style="display:flex;flex-direction:column;gap:8px;">${items}</div>
+        <button class="add-btn" id="add-glossary-item">+ Add term</button>`;
+    },
+    bind() {
+      bindGlossaryList();
+      document.getElementById('add-glossary-item').addEventListener('click', () => {
+        appState.glossary.push({ term: '', definition: '' });
+        const idx = appState.glossary.length - 1;
+        const list = document.getElementById('glossary-list');
+        const div = document.createElement('div');
+        div.innerHTML = renderGlossaryItem(idx, { term: '', definition: '' });
+        list.appendChild(div.firstElementChild);
+        bindGlossaryItem(list.lastElementChild, idx);
+        list.lastElementChild.querySelector('.glossary-term').focus();
+        autosaveAndPreview();
+      });
+    },
+    flush() {
+      appState.glossary = [...(document.querySelectorAll('#glossary-list .glossary-item')||[])].map(item => ({
+        term: item.querySelector('.glossary-term')?.value || '',
+        definition: item.querySelector('.glossary-def')?.value || '',
+      }));
+    },
+    summary() {
+      const g = (appState.glossary||[]).filter(x => x.term);
+      if (!g.length) return `<div class="summary-content muted">No terms defined</div>`;
+      return `<div class="summary-content">${g.slice(0,3).map(x=>`<strong>${esc(x.term)}</strong>: ${esc((x.definition||'').slice(0,40))}${(x.definition||'').length>40?'…':''}`).join('<br>')}${g.length>3?`<br><em>+${g.length-3} more</em>`:''}</div>`;
+    },
+  },
+
+  // ── 8. Tone ──────────────────────────────────────────────────────────────
   {
     id: 'tone', title: 'Tone', icon: '🎨',
     render() {
@@ -690,6 +795,40 @@ const steps = [
   },
 ];
 
+// ─── Glossary helpers ─────────────────────────────────────────────────────────
+function renderGlossaryItem(idx, g) {
+  return `<div class="glossary-item rule-item" data-idx="${idx}">
+    <div style="display:flex;flex-direction:column;gap:5px;flex:1">
+      <input class="glossary-term" type="text" placeholder="Term (e.g. MRR)" value="${esc(g.term)}" style="font-weight:600">
+      <input class="glossary-def"  type="text" placeholder="Definition (e.g. Monthly Recurring Revenue)" value="${esc(g.definition)}">
+    </div>
+    <button class="remove-btn" data-idx="${idx}">×</button>
+  </div>`;
+}
+
+function bindGlossaryList() {
+  document.querySelectorAll('#glossary-list .glossary-item').forEach((item, idx) => bindGlossaryItem(item, idx));
+}
+
+function bindGlossaryItem(item, idx) {
+  item.querySelector('.remove-btn').addEventListener('click', () => {
+    item.remove();
+    appState.glossary = [...document.querySelectorAll('#glossary-list .glossary-item')].map(el => ({
+      term: el.querySelector('.glossary-term')?.value||'',
+      definition: el.querySelector('.glossary-def')?.value||'',
+    }));
+    autosaveAndPreview();
+  });
+  item.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      if (!appState.glossary[idx]) appState.glossary[idx] = { term:'', definition:'' };
+      if (inp.classList.contains('glossary-term')) appState.glossary[idx].term = inp.value;
+      else appState.glossary[idx].definition = inp.value;
+      autosaveAndPreview();
+    });
+  });
+}
+
 // ─── Rule list helpers ────────────────────────────────────────────────────────
 function renderRuleItem(prefix, idx, value, placeholder) {
   return `<div class="rule-item" id="${prefix}-${idx}">
@@ -884,6 +1023,20 @@ function buildPrompt() {
     lines.push('');
   }
 
+  // PERSONA
+  const p = appState.persona || {};
+  const personaParts = [];
+  if ((p.description||'').trim()) personaParts.push(p.description.trim());
+  const tech = parseInt(p.techLevel||50);
+  personaParts.push(`Technical level: ${tech<30?'Beginner':tech>70?'Expert':'Intermediate'}`);
+  if ((p.goals||'').trim())      personaParts.push(`Goals: ${p.goals.trim()}`);
+  if ((p.painPoints||'').trim()) personaParts.push(`Pain points: ${p.painPoints.trim()}`);
+  if ((p.tags||[]).length)       personaParts.push(`User type: ${p.tags.join(', ')}`);
+  if (p.description || (p.tags||[]).length) {
+    lines.push(useXml ? wrap('persona', personaParts.join('\n')) : `PERSONA (Target User):\n${personaParts.join('\n')}`);
+    lines.push('');
+  }
+
   const c = appState.ctx || {};
   const ctxParts = [];
   if (c.company)  ctxParts.push(`Company: ${c.company}`);
@@ -914,6 +1067,14 @@ function buildPrompt() {
   const negRules = (appState.negativeRules || []).filter(Boolean);
   if (negRules.length) {
     lines.push(useXml ? wrap('constraints', negRules.map(r=>`• ${r}`).join('\n')) : `CONSTRAINTS (Don't):\n${negRules.map(r=>`• ${r}`).join('\n')}`);
+    lines.push('');
+  }
+
+  // GLOSSARY
+  const glossary = (appState.glossary||[]).filter(g => g.term);
+  if (glossary.length) {
+    const glossaryContent = glossary.map(g => `${g.term}: ${g.definition}`).join('\n');
+    lines.push(useXml ? wrap('glossary', glossaryContent) : `GLOSSARY:\n${glossaryContent}`);
     lines.push('');
   }
 
@@ -1049,10 +1210,12 @@ function restoreState(state) {
   appState = {
     model:         state.model         || 'claude',
     role:          state.role          || '',
+    persona:       { description:'', techLevel:'50', goals:'', painPoints:'', tags:[], ...(state.persona||{}) },
     ctx:           { company:'', domain:'', audience:'', extra:'', ...(state.ctx||{}) },
     objective:     { type:'', description:'', ...(state.objective||{}) },
     positiveRules: Array.isArray(state.positiveRules) ? state.positiveRules : [],
     negativeRules: Array.isArray(state.negativeRules) ? state.negativeRules : [],
+    glossary:      Array.isArray(state.glossary) ? state.glossary : [],
     tone:          { formality:'50', detail:'50', energy:'50', tags:[], ...(state.tone||{}) },
     format:        { type:'plain', length:'', template:'', ...(state.format||{}) },
     fewShots:      Array.isArray(state.fewShots) ? state.fewShots : [],
@@ -1214,9 +1377,11 @@ function resetAll() {
   localStorage.removeItem(AUTOSAVE_KEY);
   appState = {
     model:'claude', role:'',
+    persona:{ description:'', techLevel:'50', goals:'', painPoints:'', tags:[] },
     ctx:{ company:'', domain:'', audience:'', extra:'' },
     objective:{ type:'', description:'' },
     positiveRules:[], negativeRules:[],
+    glossary:[],
     tone:{ formality:'50', detail:'50', energy:'50', tags:[] },
     format:{ type:'plain', length:'', template:'' },
     fewShots:[],
@@ -1227,6 +1392,207 @@ function resetAll() {
   currentStep = 0;
   renderAll();
   showToast('Cleared — starting fresh');
+}
+
+// ─── Facts Canvas ─────────────────────────────────────────────────────────────
+// Completely separate workspace — own state, own localStorage, own preview.
+// Includes key-value facts, reference docs, plus reads persona + glossary
+// from appState so they appear in the facts output for reference.
+
+let factsState = {
+  facts: [],
+  docs: [],
+};
+
+function loadFactsState() {
+  try {
+    const raw = localStorage.getItem(FACTS_KEY);
+    if (raw) factsState = { facts:[], docs:[], ...JSON.parse(raw) };
+  } catch(e) {}
+}
+
+function saveFactsState() {
+  try { localStorage.setItem(FACTS_KEY, JSON.stringify(factsState)); } catch(e) {}
+}
+
+function openFactsCanvas() {
+  loadFactsState();
+  renderFactsCanvas();
+  document.getElementById('facts-canvas').classList.add('open');
+}
+function closeFactsCanvas() {
+  document.getElementById('facts-canvas').classList.remove('open');
+}
+
+function renderFactsCanvas() {
+  renderFactsList();
+  renderDocsList();
+  renderFactsPersonaView();
+  renderFactsGlossaryView();
+  renderFactsPreview();
+}
+
+function renderFactsPersonaView() {
+  const el = document.getElementById('facts-persona-view');
+  if (!el) return;
+  const p = appState.persona || {};
+  if (!p.description && !(p.tags||[]).length && !p.goals) {
+    el.innerHTML = `<div class="muted" style="padding:12px 0">No persona set yet — go to the <strong>Persona</strong> step in the wizard.</div>`;
+    return;
+  }
+  const tech = parseInt(p.techLevel||50);
+  const rows = [
+    p.description && `<div class="ro-row"><span class="ro-key">Description</span><span class="ro-val">${esc(p.description)}</span></div>`,
+    `<div class="ro-row"><span class="ro-key">Tech level</span><span class="ro-val">${tech<30?'Beginner':tech>70?'Expert':'Intermediate'}</span></div>`,
+    p.goals && `<div class="ro-row"><span class="ro-key">Goals</span><span class="ro-val">${esc(p.goals)}</span></div>`,
+    p.painPoints && `<div class="ro-row"><span class="ro-key">Pain points</span><span class="ro-val">${esc(p.painPoints)}</span></div>`,
+    (p.tags||[]).length && `<div class="ro-row"><span class="ro-key">User type</span><span class="ro-val">${p.tags.map(t=>`<span class="summary-tag">${esc(t)}</span>`).join('')}</span></div>`,
+  ].filter(Boolean);
+  el.innerHTML = rows.join('');
+}
+
+function renderFactsGlossaryView() {
+  const el = document.getElementById('facts-glossary-view');
+  if (!el) return;
+  const glossary = (appState.glossary||[]).filter(g => g.term);
+  if (!glossary.length) {
+    el.innerHTML = `<div class="muted" style="padding:12px 0">No glossary terms yet — go to the <strong>Glossary</strong> step in the wizard.</div>`;
+    return;
+  }
+  el.innerHTML = glossary.map(g => `
+    <div class="ro-row">
+      <span class="ro-key" style="font-weight:700">${esc(g.term)}</span>
+      <span class="ro-val">${esc(g.definition)}</span>
+    </div>`).join('');
+}
+
+function renderFactsList() {
+  const container = document.getElementById('facts-list');
+  container.innerHTML = factsState.facts.map((f,i) => `
+    <div class="facts-kv-item" data-idx="${i}">
+      <input class="facts-key"   type="text" placeholder="Key (e.g. CEO Name)"      value="${esc(f.key||'')}" data-idx="${i}">
+      <input class="facts-value" type="text" placeholder="Value (e.g. John Smith)"  value="${esc(f.value||'')}" data-idx="${i}">
+      <button class="remove-btn facts-remove" data-idx="${i}">×</button>
+    </div>`).join('');
+
+  container.querySelectorAll('.facts-key, .facts-value').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const idx = parseInt(inp.dataset.idx);
+      if (!factsState.facts[idx]) factsState.facts[idx] = { key:'', value:'' };
+      if (inp.classList.contains('facts-key')) factsState.facts[idx].key = inp.value;
+      else factsState.facts[idx].value = inp.value;
+      saveFactsState();
+      renderFactsPreview();
+    });
+  });
+  container.querySelectorAll('.facts-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      factsState.facts.splice(parseInt(btn.dataset.idx), 1);
+      saveFactsState();
+      renderFactsList();
+      renderFactsPreview();
+    });
+  });
+}
+
+function renderDocsList() {
+  const container = document.getElementById('docs-list');
+  container.innerHTML = factsState.docs.map((d,i) => `
+    <div class="docs-item" data-idx="${i}">
+      <div class="docs-item-header">
+        <input class="docs-title" type="text" placeholder="Document title (e.g. Pricing FAQ)" value="${esc(d.title||'')}" data-idx="${i}">
+        <button class="remove-btn docs-remove" data-idx="${i}">×</button>
+      </div>
+      <textarea class="docs-content" placeholder="Paste reference content here..." data-idx="${i}" rows="5">${esc(d.content||'')}</textarea>
+    </div>`).join('');
+
+  container.querySelectorAll('.docs-title').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const idx = parseInt(inp.dataset.idx);
+      if (!factsState.docs[idx]) factsState.docs[idx] = { title:'', content:'' };
+      factsState.docs[idx].title = inp.value;
+      saveFactsState(); renderFactsPreview();
+    });
+  });
+  container.querySelectorAll('.docs-content').forEach(ta => {
+    ta.addEventListener('input', () => {
+      const idx = parseInt(ta.dataset.idx);
+      if (!factsState.docs[idx]) factsState.docs[idx] = { title:'', content:'' };
+      factsState.docs[idx].content = ta.value;
+      saveFactsState(); renderFactsPreview();
+    });
+  });
+  container.querySelectorAll('.docs-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      factsState.docs.splice(parseInt(btn.dataset.idx), 1);
+      saveFactsState(); renderDocsList(); renderFactsPreview();
+    });
+  });
+}
+
+function buildFactsOutput() {
+  const lines = [];
+
+  // Key-value facts
+  const validFacts = factsState.facts.filter(f => f.key || f.value);
+  if (validFacts.length) {
+    lines.push('── FACTS ──────────────────────────────────────');
+    validFacts.forEach(f => lines.push(`${f.key}: ${f.value}`));
+    lines.push('');
+  }
+
+  // Persona from main wizard (read-only reference)
+  const p = appState.persona || {};
+  if ((p.description||'').trim() || (p.tags||[]).length) {
+    const tech = parseInt(p.techLevel||50);
+    lines.push('── PERSONA ─────────────────────────────────────');
+    if (p.description) lines.push(p.description.trim());
+    lines.push(`Technical level: ${tech<30?'Beginner':tech>70?'Expert':'Intermediate'}`);
+    if (p.goals) lines.push(`Goals: ${p.goals.trim()}`);
+    if (p.painPoints) lines.push(`Pain points: ${p.painPoints.trim()}`);
+    if ((p.tags||[]).length) lines.push(`User type: ${p.tags.join(', ')}`);
+    lines.push('');
+  }
+
+  // Glossary from main wizard (read-only reference)
+  const glossary = (appState.glossary||[]).filter(g => g.term);
+  if (glossary.length) {
+    lines.push('── GLOSSARY ────────────────────────────────────');
+    glossary.forEach(g => lines.push(`${g.term}: ${g.definition}`));
+    lines.push('');
+  }
+
+  // Reference documents
+  const validDocs = factsState.docs.filter(d => d.title || d.content);
+  validDocs.forEach(d => {
+    lines.push(`── ${(d.title||'REFERENCE DOCUMENT').toUpperCase()} ${'─'.repeat(Math.max(0,44-(d.title||'').length))}`);
+    lines.push(d.content || '');
+    lines.push('');
+  });
+
+  return lines.join('\n').trim() || '(Add facts and reference documents on the left to build your knowledge base)';
+}
+
+function renderFactsPreview() {
+  const out = buildFactsOutput();
+  const el = document.getElementById('facts-output');
+  if (el) el.textContent = out;
+  const charEl = document.getElementById('facts-char-count');
+  if (charEl) charEl.textContent = out.length.toLocaleString();
+  const tokEl = document.getElementById('facts-token-count');
+  if (tokEl) tokEl.textContent = Math.round(out.length / 4).toLocaleString();
+}
+
+function copyFactsOutput() {
+  navigator.clipboard.writeText(buildFactsOutput()).then(() => {
+    const fb = document.getElementById('facts-copy-feedback');
+    fb.classList.add('show');
+    setTimeout(() => fb.classList.remove('show'), 2000);
+  });
+}
+
+function downloadFactsOutput() {
+  triggerDownload(new Blob([buildFactsOutput()], { type:'text/plain' }), 'facts-and-context.txt');
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -1252,6 +1618,32 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-copy').addEventListener('click', copyPrompt);
   document.getElementById('btn-download').addEventListener('click', downloadPrompt);
   document.getElementById('btn-reset').addEventListener('click', resetAll);
+  document.getElementById('btn-facts').addEventListener('click', openFactsCanvas);
+  document.getElementById('facts-close').addEventListener('click', closeFactsCanvas);
+  document.getElementById('facts-canvas').addEventListener('click', e => { if (e.target === e.currentTarget) closeFactsCanvas(); });
+  document.getElementById('btn-facts-copy').addEventListener('click', copyFactsOutput);
+  document.getElementById('btn-facts-download').addEventListener('click', downloadFactsOutput);
+  document.getElementById('btn-add-fact').addEventListener('click', () => {
+    factsState.facts.push({ key:'', value:'' });
+    saveFactsState(); renderFactsList(); renderFactsPreview();
+    const inputs = document.querySelectorAll('#facts-list .facts-key');
+    inputs[inputs.length-1]?.focus();
+  });
+  document.getElementById('btn-add-doc').addEventListener('click', () => {
+    factsState.docs.push({ title:'', content:'' });
+    saveFactsState(); renderDocsList(); renderFactsPreview();
+    const inputs = document.querySelectorAll('#docs-list .docs-title');
+    inputs[inputs.length-1]?.focus();
+  });
+  document.getElementById('facts-canvas-tabs').addEventListener('click', e => {
+    const tab = e.target.closest('[data-tab]');
+    if (!tab) return;
+    document.querySelectorAll('#facts-canvas-tabs [data-tab]').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('.facts-tab-panel').forEach(p => p.style.display = 'none');
+    document.getElementById(`facts-panel-${tab.dataset.tab}`).style.display = '';
+  });
+  loadFactsState();
 
   document.getElementById('save-name-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') confirmSave();
