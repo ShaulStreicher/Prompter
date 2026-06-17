@@ -1347,11 +1347,23 @@ function broadcastState() {
   }, 500);
 }
 
+let _reconnectTimer = null;
+let _reconnectAttempts = 0;
+let _intentionalClose = false;
+
 function connectCollab(code) {
+  _intentionalClose = false;
+  _reconnectAttempts = 0;
+  _doConnect(code);
+}
+
+function _doConnect(code) {
   ws = new WebSocket(WS_URL);
   ws.onopen = () => {
-    if (code) {
-      ws.send(JSON.stringify({ type: 'join', roomId: code }));
+    _reconnectAttempts = 0;
+    const rejoin = code || roomId;
+    if (rejoin) {
+      ws.send(JSON.stringify({ type: 'join', roomId: rejoin }));
     } else {
       ws.send(JSON.stringify({ type: 'create' }));
     }
@@ -1361,14 +1373,27 @@ function connectCollab(code) {
     handleWsMessage(msg);
   };
   ws.onclose = () => {
-    ws = null; roomId = null; peerCount = 0;
+    ws = null;
     updatePeerBadge();
-    document.getElementById('collab-room-section').style.display = 'none';
-    document.getElementById('collab-create-section').style.display = '';
-    document.getElementById('collab-join-section').style.display = '';
-    showToast('Disconnected from collaboration room');
+    if (_intentionalClose) {
+      roomId = null; peerCount = 0;
+      document.getElementById('collab-room-section').style.display = 'none';
+      document.getElementById('collab-create-section').style.display = '';
+      document.getElementById('collab-join-section').style.display = '';
+      showToast('Left collaboration room');
+      return;
+    }
+    // Auto-reconnect with exponential backoff (max 30s)
+    _reconnectAttempts++;
+    const delay = Math.min(1000 * Math.pow(2, _reconnectAttempts - 1), 30000);
+    document.getElementById('collab-status').textContent = `Reconnecting in ${Math.round(delay/1000)}s…`;
+    clearTimeout(_reconnectTimer);
+    _reconnectTimer = setTimeout(() => {
+      document.getElementById('collab-status').textContent = 'Reconnecting…';
+      _doConnect(null); // rejoin using saved roomId
+    }, delay);
   };
-  ws.onerror = () => showToast('Collaboration connection error');
+  ws.onerror = () => {}; // onclose fires after onerror, handles everything
 }
 
 function handleWsMessage(msg) {
@@ -1467,6 +1492,8 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.clipboard.writeText(url).then(() => showToast('Link copied!'));
   });
   document.getElementById('btn-leave-room').addEventListener('click', () => {
+    _intentionalClose = true;
+    clearTimeout(_reconnectTimer);
     if (ws) { ws.close(); }
     closeCollabModal();
   });
