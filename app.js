@@ -95,8 +95,6 @@ const FALLBACK_MAP = {
   rephrase:     'If unclear, rephrase the question back to the user in your own words and ask for confirmation.',
 };
 
-const FACTS_KEY = 'promptbuilder_facts';
-
 // ─── Global in-memory state ───────────────────────────────────────────────────
 let appState = {
   model: 'claude',
@@ -117,6 +115,11 @@ let currentStep   = 0;
 let autosaveTimer = null;
 let shotCounter   = 0;
 
+// ─── Collaboration ────────────────────────────────────────────────────────────
+const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:3001' : 'wss://' + window.location.host;
+let ws = null, roomId = null, peerCount = 0, isSyncing = false;
+let broadcastTimer = null;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function esc(str) {
   if (str == null) return '';
@@ -136,10 +139,6 @@ function flushStep(stepId) {
 }
 
 // ─── Step definitions ─────────────────────────────────────────────────────────
-// Each step: render() → HTML string pre-filled from appState
-//            bind()   → attaches listeners that write back to appState
-//            flush()  → explicit DOM→appState sync (called before navigation)
-//            summary()→ compact read-only HTML from appState (no DOM queries)
 const steps = [
   // ── 1. Target Model ──────────────────────────────────────────────────────
   {
@@ -444,10 +443,10 @@ const steps = [
         ['html','HTML'],['template','Custom template']
       ].map(([v,l]) => `<option value="${v}" ${fmt.type===v?'selected':''}>${l}</option>`).join('');
       const lenOptions = [
-        ['','No specific length'],['1-2 sentences','1–2 sentences'],
-        ['1 paragraph','1 paragraph'],['3-5 bullet points','3–5 bullet points'],
+        ['','No specific length'],['1-2 sentences','1-2 sentences'],
+        ['1 paragraph','1 paragraph'],['3-5 bullet points','3-5 bullet points'],
         ['under 200 words','Under 200 words'],['under 500 words','Under 500 words'],
-        ['500-1000 words','500–1000 words'],['comprehensive, no limit','Comprehensive, no limit']
+        ['500-1000 words','500-1000 words'],['comprehensive, no limit','Comprehensive, no limit']
       ].map(([v,l]) => `<option value="${v}" ${fmt.length===v?'selected':''}>${l}</option>`).join('');
       return `
         <div>
@@ -689,26 +688,14 @@ const steps = [
   },
 ];
 
-// ─── Glossary item renderer (used by Facts Canvas only) ───────────────────────
-function renderGlossaryItem(idx, g) {
-  return `<div class="glossary-item rule-item" data-idx="${idx}">
-    <div style="display:flex;flex-direction:column;gap:5px;flex:1">
-      <input class="glossary-term" type="text" placeholder="Term (e.g. MRR)" value="${esc(g.term)}" style="font-weight:600">
-      <input class="glossary-def"  type="text" placeholder="Definition (e.g. Monthly Recurring Revenue)" value="${esc(g.definition)}">
-    </div>
-    <button class="remove-btn" data-idx="${idx}">×</button>
-  </div>`;
-}
-
 // ─── Rule list helpers ────────────────────────────────────────────────────────
 function renderRuleItem(prefix, idx, value, placeholder) {
   return `<div class="rule-item" id="${prefix}-${idx}">
     <input type="text" placeholder="${esc(placeholder)}" value="${esc(value)}">
-    <button class="remove-btn" data-prefix="${prefix}" data-idx="${idx}">×</button>
+    <button class="remove-btn" data-prefix="${prefix}" data-idx="${idx}">x</button>
   </div>`;
 }
 
-// Bind existing DOM rule items to appState key (dot-notation: 'cot.rules')
 function bindRuleList(listId, prefix, stateKey, placeholder) {
   const container = document.getElementById(listId);
   if (!container) return;
@@ -727,7 +714,6 @@ function bindRuleList(listId, prefix, stateKey, placeholder) {
   });
 }
 
-// Append a new rule item to a live DOM list
 function appendRuleItem(listId, prefix, idx, value, stateKey, placeholder) {
   const container = document.getElementById(listId);
   if (!container) return;
@@ -752,7 +738,6 @@ function getDOMRuleValues(listId) {
   return [...(document.querySelectorAll(`#${listId} input`)||[])].map(i => i.value);
 }
 
-// Set a (possibly nested) key on appState: 'cot.rules' → appState.cot.rules
 function setNestedKey(key, value) {
   const parts = key.split('.');
   let obj = appState;
@@ -765,7 +750,7 @@ function renderFewShotPair(idx, shot) {
   return `<div class="few-shot-pair" data-idx="${idx}">
     <div class="few-shot-pair-header">
       <span class="few-shot-label">Example ${idx + 1}</span>
-      <button class="remove-btn" data-idx="${idx}">×</button>
+      <button class="remove-btn" data-idx="${idx}">x</button>
     </div>
     <div><label>Input</label><textarea placeholder="User input or question...">${esc(shot.input)}</textarea></div>
     <div><label>Expected Output</label><textarea placeholder="Ideal response...">${esc(shot.output)}</textarea></div>
@@ -812,7 +797,7 @@ function renderSidebar() {
     const isActive = i === currentStep;
     const cls = isActive ? 'active' : isDone ? 'done' : '';
     return `<div class="sidebar-step ${cls}" data-step="${i}">
-      <div class="step-circle">${isDone ? '✓' : (i + 1)}</div>
+      <div class="step-circle">${isDone ? 'v' : (i + 1)}</div>
       <span class="step-name">${esc(step.title)}</span>
     </div>`;
   }).join('');
@@ -831,7 +816,7 @@ function renderMain() {
         <span class="step-card-icon">${step.icon}</span>
         <div>
           <div class="step-card-title">${esc(step.title)}</div>
-          <div class="step-card-sub">Step ${currentStep + 1} of ${steps.length} — define what you want the model to do.</div>
+          <div class="step-card-sub">Step ${currentStep + 1} of ${steps.length} -- define what you want the model to do.</div>
         </div>
         <span class="editing-badge">Editing</span>
       </div>
@@ -839,8 +824,8 @@ function renderMain() {
         ${step.render()}
       </div>
       <div class="step-card-nav">
-        <button class="btn btn-ghost btn-sm" id="btn-back" ${currentStep===0?'disabled':''}>${currentStep===0?'← Back':'← Back'}</button>
-        <button class="btn btn-primary btn-sm" id="btn-next">${currentStep===steps.length-1?'Finish ✓':'Next →'}</button>
+        <button class="btn btn-ghost btn-sm" id="btn-back" ${currentStep===0?'disabled':''}>Back</button>
+        <button class="btn btn-primary btn-sm" id="btn-next">${currentStep===steps.length-1?'Finish':'Next'}</button>
       </div>
     </div>`;
 
@@ -852,7 +837,7 @@ function renderMain() {
         <div class="summary-card-header">
           <span class="summary-card-icon">${s.icon}</span>
           <span class="summary-card-title">${esc(s.title)}</span>
-          <span class="summary-done-badge">✓ done</span>
+          <span class="summary-done-badge">done</span>
         </div>
         ${s.summary()}
       </div>`;
@@ -881,7 +866,7 @@ function goTo(n) {
   document.getElementById('main-area').scrollTop = 0;
 }
 
-// ─── buildPrompt — reads from appState, never from DOM ───────────────────────
+// ─── buildPrompt ─────────────────────────────────────────────────────────────
 function buildPrompt() {
   const model  = appState.model || 'claude';
   const useXml = model === 'claude';
@@ -917,13 +902,13 @@ function buildPrompt() {
 
   const posRules = (appState.positiveRules || []).filter(Boolean);
   if (posRules.length) {
-    lines.push(useXml ? wrap('instructions', posRules.map(r=>`• ${r}`).join('\n')) : `INSTRUCTIONS (Do):\n${posRules.map(r=>`• ${r}`).join('\n')}`);
+    lines.push(useXml ? wrap('instructions', posRules.map(r=>`- ${r}`).join('\n')) : `INSTRUCTIONS (Do):\n${posRules.map(r=>`- ${r}`).join('\n')}`);
     lines.push('');
   }
 
   const negRules = (appState.negativeRules || []).filter(Boolean);
   if (negRules.length) {
-    lines.push(useXml ? wrap('constraints', negRules.map(r=>`• ${r}`).join('\n')) : `CONSTRAINTS (Don't):\n${negRules.map(r=>`• ${r}`).join('\n')}`);
+    lines.push(useXml ? wrap('constraints', negRules.map(r=>`- ${r}`).join('\n')) : `CONSTRAINTS (Don't):\n${negRules.map(r=>`- ${r}`).join('\n')}`);
     lines.push('');
   }
 
@@ -959,10 +944,10 @@ function buildPrompt() {
   if (cot.enabled) {
     const base = cot.style === 'custom' ? (cot.custom||'').trim() : (COT_MAP[cot.style] || COT_MAP['think-step']);
     const cotParts = [base];
-    if ((cot.steps||[]).length) cotParts.push(`\nYour reasoning must include these steps:\n${cot.steps.map(s=>`• ${s}`).join('\n')}`);
-    if ((cot.rules||[]).filter(Boolean).length) cotParts.push(`\nReasoning rules:\n${cot.rules.filter(Boolean).map(r=>`• ${r}`).join('\n')}`);
-    if ((cot.constraints||[]).filter(Boolean).length) cotParts.push(`\nReasoning constraints:\n${cot.constraints.filter(Boolean).map(c=>`• Do not: ${c}`).join('\n')}`);
-    if (cot.separate) cotParts.push(`\nClearly separate your reasoning from your final answer using a divider or label (e.g. "Final Answer:").`);
+    if ((cot.steps||[]).length) cotParts.push(`\nYour reasoning must include these steps:\n${cot.steps.map(s=>`- ${s}`).join('\n')}`);
+    if ((cot.rules||[]).filter(Boolean).length) cotParts.push(`\nReasoning rules:\n${cot.rules.filter(Boolean).map(r=>`- ${r}`).join('\n')}`);
+    if ((cot.constraints||[]).filter(Boolean).length) cotParts.push(`\nReasoning constraints:\n${cot.constraints.filter(Boolean).map(c=>`- Do not: ${c}`).join('\n')}`);
+    if (cot.separate) cotParts.push(`\nClearly separate your reasoning from your final answer using a divider or label.`);
     lines.push(useXml ? wrap('thinking_instruction', cotParts.join('')) : `REASONING PROCESS:\n${cotParts.join('')}`);
     lines.push('');
   }
@@ -1002,9 +987,9 @@ function updateHeaderSubtitle() {
   if (name) parts.unshift(name);
   else {
     const role = (appState.role||'').trim();
-    if (role) parts.push(role.split(' ').slice(0,4).join(' ') + (role.split(' ').length>4?'…':''));
+    if (role) parts.push(role.split(' ').slice(0,4).join(' ') + (role.split(' ').length>4?'...':''));
   }
-  document.getElementById('header-subtitle').textContent = parts.join(' · ');
+  document.getElementById('header-subtitle').textContent = parts.join(' - ');
 }
 
 // ─── Copy / Download ──────────────────────────────────────────────────────────
@@ -1033,6 +1018,7 @@ function triggerDownload(blob, filename) {
 function autosaveAndPreview() {
   updatePreview();
   scheduleAutosave();
+  broadcastState();
 }
 
 function scheduleAutosave() {
@@ -1049,7 +1035,6 @@ function scheduleAutosave() {
 
 // ─── State capture / restore ─────────────────────────────────────────────────
 function captureState() {
-  // Flush the active step's DOM into appState before capturing
   flushStep(steps[currentStep].id);
   return { version: 1, ...JSON.parse(JSON.stringify(appState)) };
 }
@@ -1092,12 +1077,22 @@ function confirmSave() {
   appState.promptName = name;
   updateHeaderSubtitle();
   const saves = getSaves();
-  const idx   = saves.findIndex(s => s.name === name);
-  const entry = { name, savedAt: new Date().toISOString(), state: captureState() };
-  if (idx >= 0) saves[idx] = entry; else saves.unshift(entry);
+  const idx = saves.findIndex(s => s.name === name);
+  const now = new Date().toISOString();
+  const versionEntry = { savedAt: now, note: '', state: captureState() };
+  if (idx >= 0) {
+    const existing = saves[idx];
+    if (!Array.isArray(existing.versions)) existing.versions = [];
+    existing.versions.unshift(versionEntry);
+    if (existing.versions.length > 50) existing.versions.length = 50;
+    existing.savedAt = now;
+    existing.state = versionEntry.state;
+  } else {
+    saves.unshift({ name, savedAt: now, state: versionEntry.state, versions: [versionEntry] });
+  }
   setSaves(saves);
   closeSaveNameModal();
-  showToast(`"${name}" saved`);
+  showSaveToast(name, saves.findIndex(s => s.name === name), 0);
 }
 
 function deleteSave(name) {
@@ -1111,7 +1106,7 @@ function duplicateSave(name) {
   if (!save) return;
   const newName = `${save.name} (copy)`;
   const saves   = getSaves();
-  saves.unshift({ name: newName, savedAt: new Date().toISOString(), state: { ...save.state, promptName: newName } });
+  saves.unshift({ name: newName, savedAt: new Date().toISOString(), state: { ...save.state, promptName: newName }, versions: [] });
   setSaves(saves);
   renderSavedList();
   showToast(`Duplicated as "${newName}"`);
@@ -1138,34 +1133,71 @@ function renderSavedList() {
   const saves = getSaves();
   const container = document.getElementById('saved-list-container');
   if (!saves.length) {
-    container.innerHTML = `<div class="empty-state"><span class="empty-icon">💾</span>No saved prompts yet.<br>Click <strong>Save</strong> in the header to save the current prompt.</div>`;
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">save</span>No saved prompts yet.<br>Click <strong>Save</strong> in the header to save the current prompt.</div>`;
     return;
   }
-  container.innerHTML = `<div class="saved-list">${saves.map(s => {
-    const date     = new Date(s.savedAt).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
-    const model    = s.state?.model || 'generic';
+  container.innerHTML = `<div class="saved-list">${saves.map((s, si) => {
+    const date = new Date(s.savedAt).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
+    const model = s.state?.model || 'generic';
     const safeName = esc(s.name);
-    return `<div class="saved-item" data-name="${safeName}">
-      <div class="saved-item-info">
-        <div class="saved-item-name">${safeName}</div>
-        <div class="saved-item-meta">${date} · ${model}</div>
+    const vCount = (s.versions||[]).length;
+    return `<div class="saved-item-wrapper" data-save-idx="${si}">
+      <div class="saved-item" data-name="${safeName}">
+        <div class="saved-item-info">
+          <div class="saved-item-name">${safeName}</div>
+          <div class="saved-item-meta">${date} - ${model} - ${vCount} version${vCount!==1?'s':''}</div>
+        </div>
+        <div class="saved-item-actions">
+          <button class="icon-btn" title="Load" data-action="load">Load</button>
+          <button class="icon-btn" title="Version history" data-action="history">History</button>
+          <button class="icon-btn" title="Duplicate" data-action="dupe">Dupe</button>
+          <button class="icon-btn" title="Export .json" data-action="export">JSON</button>
+          <button class="icon-btn danger" title="Delete" data-action="delete">Delete</button>
+        </div>
       </div>
-      <div class="saved-item-actions">
-        <button class="icon-btn" title="Load" data-action="load">↩ Load</button>
-        <button class="icon-btn" title="Duplicate" data-action="dupe">⧉ Dupe</button>
-        <button class="icon-btn" title="Export .json" data-action="export">⬇ JSON</button>
-        <button class="icon-btn danger" title="Delete" data-action="delete">🗑</button>
-      </div>
+      <div class="version-list" id="version-list-${si}" style="display:none"></div>
     </div>`;
   }).join('')}</div>`;
 
-  container.querySelectorAll('.saved-item').forEach(item => {
-    const name = saves.find(s => esc(s.name) === item.dataset.name)?.name || item.dataset.name;
-    item.querySelector('[data-action="load"]').addEventListener('click',   () => loadSave(name));
-    item.querySelector('[data-action="dupe"]').addEventListener('click',   () => duplicateSave(name));
+  container.querySelectorAll('.saved-item-wrapper').forEach((wrapper, si) => {
+    const save = saves[si];
+    const name = save.name;
+    const item = wrapper.querySelector('.saved-item');
+    item.querySelector('[data-action="load"]').addEventListener('click', () => loadSave(name));
+    item.querySelector('[data-action="dupe"]').addEventListener('click', () => duplicateSave(name));
     item.querySelector('[data-action="export"]').addEventListener('click', () => exportSaveAsJSON(name));
     item.querySelector('[data-action="delete"]').addEventListener('click', () => deleteSave(name));
+    item.querySelector('[data-action="history"]').addEventListener('click', () => toggleVersionHistory(si, save));
   });
+}
+
+function toggleVersionHistory(si, save) {
+  const el = document.getElementById(`version-list-${si}`);
+  if (!el) return;
+  if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+  const versions = save.versions || [];
+  if (!versions.length) {
+    el.innerHTML = `<div class="version-empty">No version history yet.</div>`;
+  } else {
+    el.innerHTML = versions.map((v, vi) => {
+      const date = new Date(v.savedAt).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
+      return `<div class="version-item">
+        <div class="version-meta">
+          <span class="version-num">v${versions.length - vi}</span>
+          <span class="version-date">${date}</span>
+          ${v.note ? `<span class="version-note-text">${esc(v.note)}</span>` : ''}
+        </div>
+        <button class="version-restore-btn" data-si="${si}" data-vi="${vi}">Restore</button>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('.version-restore-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const v = save.versions[parseInt(btn.dataset.vi)];
+        if (v) { restoreState(v.state); closeSavedModal(); showToast('Version restored'); }
+      });
+    });
+  }
+  el.style.display = '';
 }
 
 // ─── Upload ───────────────────────────────────────────────────────────────────
@@ -1236,282 +1268,7 @@ function resetAll() {
   };
   currentStep = 0;
   renderAll();
-  showToast('Cleared — starting fresh');
-}
-
-// ─── Facts Canvas ─────────────────────────────────────────────────────────────
-// Completely separate workspace — own state, own localStorage, own preview.
-// Includes key-value facts, reference docs, plus reads persona + glossary
-// from appState so they appear in the facts output for reference.
-
-let factsState = {
-  facts: [],
-  docs: [],
-  persona: { description: '', techLevel: '50', goals: '', painPoints: '', tags: [] },
-  glossary: [],
-};
-
-function loadFactsState() {
-  try {
-    const raw = localStorage.getItem(FACTS_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw);
-      factsState = {
-        facts: [],
-        docs: [],
-        persona: { description:'', techLevel:'50', goals:'', painPoints:'', tags:[] },
-        glossary: [],
-        ...saved,
-        persona: { description:'', techLevel:'50', goals:'', painPoints:'', tags:[], ...(saved.persona||{}) },
-      };
-    }
-  } catch(e) {}
-}
-
-function saveFactsState() {
-  try { localStorage.setItem(FACTS_KEY, JSON.stringify(factsState)); } catch(e) {}
-}
-
-function openFactsCanvas() {
-  loadFactsState();
-  renderFactsCanvas();
-  document.getElementById('facts-canvas').classList.add('open');
-}
-function closeFactsCanvas() {
-  document.getElementById('facts-canvas').classList.remove('open');
-}
-
-function renderFactsCanvas() {
-  renderFactsList();
-  renderDocsList();
-  renderFactsPersonaView();
-  renderFactsGlossaryView();
-  renderFactsPreview();
-}
-
-function renderFactsPersonaView() {
-  const el = document.getElementById('facts-persona-view');
-  if (!el) return;
-  const p = factsState.persona;
-  const PERSONA_TAGS = ['Non-technical','Power user','Decision maker','End user','Developer','Executive','Student','Researcher'];
-  const tagsHtml = PERSONA_TAGS.map(t =>
-    `<span class="tag ${(p.tags||[]).includes(t)?'active':''}" data-tag="${esc(t)}">${esc(t)}</span>`
-  ).join('');
-  el.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div>
-        <label>Who is the AI talking to?</label>
-        <textarea id="fp-description" rows="3" placeholder="e.g. A mid-level marketing manager at a B2B SaaS company...">${esc(p.description)}</textarea>
-      </div>
-      <div class="tone-row">
-        <div class="tone-slider-row">
-          <span>Beginner</span>
-          <input type="range" id="fp-tech" min="0" max="100" value="${p.techLevel||50}" style="--pct:${p.techLevel||50}%">
-          <span>Expert</span>
-        </div>
-      </div>
-      <div>
-        <label>Goals</label>
-        <textarea id="fp-goals" rows="2" placeholder="e.g. Increase qualified leads, reduce time spent on email...">${esc(p.goals)}</textarea>
-      </div>
-      <div>
-        <label>Pain points</label>
-        <textarea id="fp-pain" rows="2" placeholder="e.g. Struggles with technical jargon, tight deadlines...">${esc(p.painPoints)}</textarea>
-      </div>
-      <div>
-        <label>User type tags</label>
-        <div class="tag-picker" id="fp-tags">${tagsHtml}</div>
-      </div>
-    </div>`;
-
-  document.getElementById('fp-description').addEventListener('input', e => { factsState.persona.description = e.target.value; saveFactsState(); renderFactsPreview(); });
-  document.getElementById('fp-goals').addEventListener('input', e => { factsState.persona.goals = e.target.value; saveFactsState(); renderFactsPreview(); });
-  document.getElementById('fp-pain').addEventListener('input', e => { factsState.persona.painPoints = e.target.value; saveFactsState(); renderFactsPreview(); });
-  const techEl = document.getElementById('fp-tech');
-  techEl.addEventListener('input', () => { factsState.persona.techLevel = techEl.value; syncSlider(techEl); saveFactsState(); renderFactsPreview(); });
-  document.querySelectorAll('#fp-tags .tag').forEach(tag => {
-    tag.addEventListener('click', () => {
-      tag.classList.toggle('active');
-      factsState.persona.tags = [...document.querySelectorAll('#fp-tags .tag.active')].map(t => t.dataset.tag);
-      saveFactsState(); renderFactsPreview();
-    });
-  });
-}
-
-function renderFactsGlossaryView() {
-  const el = document.getElementById('facts-glossary-view');
-  if (!el) return;
-  const items = (factsState.glossary||[]).map((g,i) => renderGlossaryItem(i, g)).join('');
-  el.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <div id="facts-glossary-list" style="display:flex;flex-direction:column;gap:8px;">${items}</div>
-      <button class="add-btn" id="add-facts-glossary-item">+ Add term</button>
-    </div>`;
-
-  bindFactsGlossaryList();
-  document.getElementById('add-facts-glossary-item').addEventListener('click', () => {
-    factsState.glossary.push({ term: '', definition: '' });
-    const idx = factsState.glossary.length - 1;
-    const list = document.getElementById('facts-glossary-list');
-    const div = document.createElement('div');
-    div.innerHTML = renderGlossaryItem(idx, { term: '', definition: '' });
-    list.appendChild(div.firstElementChild);
-    bindFactsGlossaryItem(list.lastElementChild, idx);
-    list.lastElementChild.querySelector('.glossary-term').focus();
-    saveFactsState(); renderFactsPreview();
-  });
-}
-
-function bindFactsGlossaryList() {
-  document.querySelectorAll('#facts-glossary-list .glossary-item').forEach((item, idx) => bindFactsGlossaryItem(item, idx));
-}
-
-function bindFactsGlossaryItem(item, idx) {
-  item.querySelector('.remove-btn').addEventListener('click', () => {
-    item.remove();
-    factsState.glossary = [...document.querySelectorAll('#facts-glossary-list .glossary-item')].map(el => ({
-      term: el.querySelector('.glossary-term')?.value||'',
-      definition: el.querySelector('.glossary-def')?.value||'',
-    }));
-    saveFactsState(); renderFactsPreview();
-  });
-  item.querySelectorAll('input').forEach(inp => {
-    inp.addEventListener('input', () => {
-      if (!factsState.glossary[idx]) factsState.glossary[idx] = { term:'', definition:'' };
-      if (inp.classList.contains('glossary-term')) factsState.glossary[idx].term = inp.value;
-      else factsState.glossary[idx].definition = inp.value;
-      saveFactsState(); renderFactsPreview();
-    });
-  });
-}
-
-function renderFactsList() {
-  const container = document.getElementById('facts-list');
-  container.innerHTML = factsState.facts.map((f,i) => `
-    <div class="facts-kv-item" data-idx="${i}">
-      <input class="facts-key"   type="text" placeholder="Key (e.g. CEO Name)"      value="${esc(f.key||'')}" data-idx="${i}">
-      <input class="facts-value" type="text" placeholder="Value (e.g. John Smith)"  value="${esc(f.value||'')}" data-idx="${i}">
-      <button class="remove-btn facts-remove" data-idx="${i}">×</button>
-    </div>`).join('');
-
-  container.querySelectorAll('.facts-key, .facts-value').forEach(inp => {
-    inp.addEventListener('input', () => {
-      const idx = parseInt(inp.dataset.idx);
-      if (!factsState.facts[idx]) factsState.facts[idx] = { key:'', value:'' };
-      if (inp.classList.contains('facts-key')) factsState.facts[idx].key = inp.value;
-      else factsState.facts[idx].value = inp.value;
-      saveFactsState();
-      renderFactsPreview();
-    });
-  });
-  container.querySelectorAll('.facts-remove').forEach(btn => {
-    btn.addEventListener('click', () => {
-      factsState.facts.splice(parseInt(btn.dataset.idx), 1);
-      saveFactsState();
-      renderFactsList();
-      renderFactsPreview();
-    });
-  });
-}
-
-function renderDocsList() {
-  const container = document.getElementById('docs-list');
-  container.innerHTML = factsState.docs.map((d,i) => `
-    <div class="docs-item" data-idx="${i}">
-      <div class="docs-item-header">
-        <input class="docs-title" type="text" placeholder="Document title (e.g. Pricing FAQ)" value="${esc(d.title||'')}" data-idx="${i}">
-        <button class="remove-btn docs-remove" data-idx="${i}">×</button>
-      </div>
-      <textarea class="docs-content" placeholder="Paste reference content here..." data-idx="${i}" rows="5">${esc(d.content||'')}</textarea>
-    </div>`).join('');
-
-  container.querySelectorAll('.docs-title').forEach(inp => {
-    inp.addEventListener('input', () => {
-      const idx = parseInt(inp.dataset.idx);
-      if (!factsState.docs[idx]) factsState.docs[idx] = { title:'', content:'' };
-      factsState.docs[idx].title = inp.value;
-      saveFactsState(); renderFactsPreview();
-    });
-  });
-  container.querySelectorAll('.docs-content').forEach(ta => {
-    ta.addEventListener('input', () => {
-      const idx = parseInt(ta.dataset.idx);
-      if (!factsState.docs[idx]) factsState.docs[idx] = { title:'', content:'' };
-      factsState.docs[idx].content = ta.value;
-      saveFactsState(); renderFactsPreview();
-    });
-  });
-  container.querySelectorAll('.docs-remove').forEach(btn => {
-    btn.addEventListener('click', () => {
-      factsState.docs.splice(parseInt(btn.dataset.idx), 1);
-      saveFactsState(); renderDocsList(); renderFactsPreview();
-    });
-  });
-}
-
-function buildFactsOutput() {
-  const lines = [];
-
-  // Key-value facts
-  const validFacts = factsState.facts.filter(f => f.key || f.value);
-  if (validFacts.length) {
-    lines.push('── FACTS ──────────────────────────────────────');
-    validFacts.forEach(f => lines.push(`${f.key}: ${f.value}`));
-    lines.push('');
-  }
-
-  // Persona
-  const p = factsState.persona || {};
-  if ((p.description||'').trim() || (p.tags||[]).length) {
-    const tech = parseInt(p.techLevel||50);
-    lines.push('── PERSONA ─────────────────────────────────────');
-    if (p.description) lines.push(p.description.trim());
-    lines.push(`Technical level: ${tech<30?'Beginner':tech>70?'Expert':'Intermediate'}`);
-    if (p.goals) lines.push(`Goals: ${p.goals.trim()}`);
-    if (p.painPoints) lines.push(`Pain points: ${p.painPoints.trim()}`);
-    if ((p.tags||[]).length) lines.push(`User type: ${p.tags.join(', ')}`);
-    lines.push('');
-  }
-
-  // Glossary
-  const glossary = (factsState.glossary||[]).filter(g => g.term);
-  if (glossary.length) {
-    lines.push('── GLOSSARY ────────────────────────────────────');
-    glossary.forEach(g => lines.push(`${g.term}: ${g.definition}`));
-    lines.push('');
-  }
-
-  // Reference documents
-  const validDocs = factsState.docs.filter(d => d.title || d.content);
-  validDocs.forEach(d => {
-    lines.push(`── ${(d.title||'REFERENCE DOCUMENT').toUpperCase()} ${'─'.repeat(Math.max(0,44-(d.title||'').length))}`);
-    lines.push(d.content || '');
-    lines.push('');
-  });
-
-  return lines.join('\n').trim() || '(Add facts and reference documents on the left to build your knowledge base)';
-}
-
-function renderFactsPreview() {
-  const out = buildFactsOutput();
-  const el = document.getElementById('facts-output');
-  if (el) el.textContent = out;
-  const charEl = document.getElementById('facts-char-count');
-  if (charEl) charEl.textContent = out.length.toLocaleString();
-  const tokEl = document.getElementById('facts-token-count');
-  if (tokEl) tokEl.textContent = Math.round(out.length / 4).toLocaleString();
-}
-
-function copyFactsOutput() {
-  navigator.clipboard.writeText(buildFactsOutput()).then(() => {
-    const fb = document.getElementById('facts-copy-feedback');
-    fb.classList.add('show');
-    setTimeout(() => fb.classList.remove('show'), 2000);
-  });
-}
-
-function downloadFactsOutput() {
-  triggerDownload(new Blob([buildFactsOutput()], { type:'text/plain' }), 'facts-and-context.txt');
+  showToast('Cleared -- starting fresh');
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -1522,11 +1279,153 @@ function showToast(msg) {
     toast.id = 'toast';
     document.body.appendChild(toast);
   }
-  toast.textContent = msg;
+  toast.innerHTML = msg;
   toast.classList.add('show');
+  toast.style.pointerEvents = 'none';
   clearTimeout(toast._t);
   toast._t = setTimeout(() => toast.classList.remove('show'), 2500);
 }
+
+// ─── Version note and save toast ─────────────────────────────────────────────
+let _pendingSaveIdx = -1, _pendingVersionIdx = 0;
+
+function showSaveToast(name, saveIdx, versionIdx) {
+  _pendingSaveIdx = saveIdx;
+  _pendingVersionIdx = versionIdx;
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `"${esc(name)}" saved &nbsp;<a href="#" id="toast-add-note" style="color:#fff;font-weight:700;text-decoration:underline">Add note</a>`;
+  toast.classList.add('show');
+  toast.style.pointerEvents = 'auto';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.classList.remove('show'); toast.style.pointerEvents = 'none'; }, 5000);
+  document.getElementById('toast-add-note')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    toast.classList.remove('show');
+    openVersionNoteModal(saveIdx, versionIdx);
+  });
+}
+
+function openVersionNoteModal(saveIdx, versionIdx) {
+  _pendingSaveIdx = saveIdx;
+  _pendingVersionIdx = versionIdx;
+  document.getElementById('version-note-input').value = '';
+  document.getElementById('version-note-modal').classList.add('open');
+  setTimeout(() => document.getElementById('version-note-input').focus(), 80);
+}
+
+function closeVersionNoteModal() {
+  document.getElementById('version-note-modal').classList.remove('open');
+}
+
+function saveVersionNote() {
+  const note = document.getElementById('version-note-input').value.trim();
+  if (_pendingSaveIdx < 0) return;
+  const saves = getSaves();
+  const save = saves[_pendingSaveIdx];
+  if (save && save.versions && save.versions[_pendingVersionIdx] !== undefined) {
+    save.versions[_pendingVersionIdx].note = note;
+    setSaves(saves);
+  }
+  closeVersionNoteModal();
+  showToast('Version note saved');
+}
+
+// ─── Collaboration ────────────────────────────────────────────────────────────
+function broadcastState() {
+  if (!ws || ws.readyState !== WebSocket.OPEN || isSyncing) return;
+  clearTimeout(broadcastTimer);
+  broadcastTimer = setTimeout(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'state-sync', state: captureState() }));
+    }
+  }, 500);
+}
+
+function connectCollab(code) {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => {
+    if (code) {
+      ws.send(JSON.stringify({ type: 'join', roomId: code }));
+    } else {
+      ws.send(JSON.stringify({ type: 'create' }));
+    }
+  };
+  ws.onmessage = (e) => {
+    let msg; try { msg = JSON.parse(e.data); } catch { return; }
+    handleWsMessage(msg);
+  };
+  ws.onclose = () => {
+    ws = null; roomId = null; peerCount = 0;
+    updatePeerBadge();
+    document.getElementById('collab-room-section').style.display = 'none';
+    document.getElementById('collab-create-section').style.display = '';
+    document.getElementById('collab-join-section').style.display = '';
+    showToast('Disconnected from collaboration room');
+  };
+  ws.onerror = () => showToast('Collaboration connection error');
+}
+
+function handleWsMessage(msg) {
+  if (msg.type === 'created') {
+    roomId = msg.roomId;
+    showCollabRoom();
+  } else if (msg.type === 'joined') {
+    roomId = msg.roomId;
+    peerCount = msg.peerCount;
+    showCollabRoom();
+    updatePeerBadge();
+  } else if (msg.type === 'error') {
+    showToast('Collab error: ' + msg.message);
+  } else if (msg.type === 'state-update') {
+    isSyncing = true;
+    restoreState(msg.state);
+    isSyncing = false;
+  } else if (msg.type === 'peer-joined') {
+    peerCount = msg.peerCount;
+    updatePeerBadge();
+    updateCollabPeersDisplay();
+    showToast('A peer joined the room');
+  } else if (msg.type === 'peer-left') {
+    peerCount = msg.peerCount;
+    updatePeerBadge();
+    updateCollabPeersDisplay();
+    showToast('A peer left the room');
+  }
+}
+
+function showCollabRoom() {
+  document.getElementById('collab-room-code').textContent = roomId;
+  document.getElementById('collab-create-section').style.display = 'none';
+  document.getElementById('collab-join-section').style.display = 'none';
+  document.getElementById('collab-room-section').style.display = '';
+  document.getElementById('collab-status').textContent = 'Connected';
+  updateCollabPeersDisplay();
+  updatePeerBadge();
+}
+
+function updatePeerBadge() {
+  const badge = document.getElementById('peer-badge');
+  if (!badge) return;
+  if (roomId && ws && ws.readyState === WebSocket.OPEN) {
+    badge.style.display = '';
+    document.getElementById('peer-count').textContent = peerCount;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function updateCollabPeersDisplay() {
+  const el = document.getElementById('collab-peers');
+  if (el) el.textContent = `Peers: ${peerCount} online`;
+}
+
+function openCollabModal() { document.getElementById('collab-modal').classList.add('open'); }
+function closeCollabModal() { document.getElementById('collab-modal').classList.remove('open'); }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -1537,32 +1436,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-copy').addEventListener('click', copyPrompt);
   document.getElementById('btn-download').addEventListener('click', downloadPrompt);
   document.getElementById('btn-reset').addEventListener('click', resetAll);
-  document.getElementById('btn-facts').addEventListener('click', openFactsCanvas);
-  document.getElementById('facts-close').addEventListener('click', closeFactsCanvas);
-  document.getElementById('facts-canvas').addEventListener('click', e => { if (e.target === e.currentTarget) closeFactsCanvas(); });
-  document.getElementById('btn-facts-copy').addEventListener('click', copyFactsOutput);
-  document.getElementById('btn-facts-download').addEventListener('click', downloadFactsOutput);
-  document.getElementById('btn-add-fact').addEventListener('click', () => {
-    factsState.facts.push({ key:'', value:'' });
-    saveFactsState(); renderFactsList(); renderFactsPreview();
-    const inputs = document.querySelectorAll('#facts-list .facts-key');
-    inputs[inputs.length-1]?.focus();
-  });
-  document.getElementById('btn-add-doc').addEventListener('click', () => {
-    factsState.docs.push({ title:'', content:'' });
-    saveFactsState(); renderDocsList(); renderFactsPreview();
-    const inputs = document.querySelectorAll('#docs-list .docs-title');
-    inputs[inputs.length-1]?.focus();
-  });
-  document.getElementById('facts-canvas-tabs').addEventListener('click', e => {
-    const tab = e.target.closest('[data-tab]');
-    if (!tab) return;
-    document.querySelectorAll('#facts-canvas-tabs [data-tab]').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    document.querySelectorAll('.facts-tab-panel').forEach(p => p.style.display = 'none');
-    document.getElementById(`facts-panel-${tab.dataset.tab}`).style.display = '';
-  });
-  loadFactsState();
 
   document.getElementById('save-name-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') confirmSave();
@@ -1579,6 +1452,30 @@ document.addEventListener('DOMContentLoaded', () => {
   uploadZone.addEventListener('click',     () => document.getElementById('file-upload-input').click());
   document.getElementById('file-upload-input').addEventListener('change', handleFileUpload);
 
+  // collab
+  document.getElementById('btn-collab').addEventListener('click', openCollabModal);
+  document.getElementById('collab-modal-close').addEventListener('click', closeCollabModal);
+  document.getElementById('collab-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCollabModal(); });
+  document.getElementById('btn-create-room').addEventListener('click', () => connectCollab(null));
+  document.getElementById('btn-join-room').addEventListener('click', () => {
+    const code = document.getElementById('collab-join-input').value.trim().toUpperCase();
+    if (code) connectCollab(code);
+  });
+  document.getElementById('btn-copy-room-link').addEventListener('click', () => {
+    const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
+    navigator.clipboard.writeText(url).then(() => showToast('Link copied!'));
+  });
+  document.getElementById('btn-leave-room').addEventListener('click', () => {
+    if (ws) { ws.close(); }
+    closeCollabModal();
+  });
+
+  // version note modal
+  document.getElementById('version-note-close').addEventListener('click', closeVersionNoteModal);
+  document.getElementById('version-note-cancel').addEventListener('click', closeVersionNoteModal);
+  document.getElementById('version-note-save').addEventListener('click', saveVersionNote);
+  document.getElementById('version-note-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeVersionNoteModal(); });
+
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey||e.metaKey) && e.key === 's') { e.preventDefault(); savePromptAs(); }
@@ -1586,6 +1483,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'ArrowRight' && e.altKey) { e.preventDefault(); goTo(currentStep + 1); }
     if (e.key === 'ArrowLeft'  && e.altKey) { e.preventDefault(); goTo(currentStep - 1); }
   });
+
+  // check URL for ?room= param
+  const urlRoom = new URLSearchParams(window.location.search).get('room');
+  if (urlRoom) connectCollab(urlRoom.toUpperCase());
 
   // Restore autosave or render fresh
   try {

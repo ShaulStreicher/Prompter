@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompter — Facts &amp; Knowledge Base</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-logo">P</div>
+  <span class="header-title">Prompter</span>
+  <nav class="page-nav">
+    <a href="index.html" class="nav-link">🪄 Wizard</a>
+    <a href="facts.html" class="nav-link active">📌 Facts</a>
+  </nav>
+  <div class="header-actions">
+    <span class="copy-feedback" id="facts-copy-feedback">Copied!</span>
+    <button class="btn btn-dark btn-sm" id="btn-facts-copy">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+    <button class="btn btn-primary btn-sm" id="btn-facts-download">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </button>
+  </div>
+</header>
+
+<div class="facts-page-layout">
+  <!-- LEFT: editor -->
+  <div class="facts-page-editor">
+    <div class="facts-tabs" id="facts-canvas-tabs">
+      <button class="facts-tab active" data-tab="facts">📌 Key Facts</button>
+      <button class="facts-tab" data-tab="docs">📄 Reference Docs</button>
+      <button class="facts-tab" data-tab="persona">👤 Persona</button>
+      <button class="facts-tab" data-tab="glossary">📖 Glossary</button>
+    </div>
+
+    <!-- Facts tab -->
+    <div class="facts-tab-panel" id="facts-panel-facts">
+      <p class="facts-panel-hint">Fixed facts the AI must treat as true. Prevents hallucination on known data.</p>
+      <div class="facts-kv-header"><span>Key</span><span>Value</span></div>
+      <div id="facts-list"></div>
+      <button class="add-btn" id="btn-add-fact">+ Add fact</button>
+    </div>
+
+    <!-- Docs tab -->
+    <div class="facts-tab-panel" id="facts-panel-docs" style="display:none">
+      <p class="facts-panel-hint">Paste in documents, policies, FAQs, or any text the AI should use as its knowledge base.</p>
+      <div id="docs-list"></div>
+      <button class="add-btn" id="btn-add-doc">+ Add document</button>
+    </div>
+
+    <!-- Persona tab -->
+    <div class="facts-tab-panel" id="facts-panel-persona" style="display:none">
+      <p class="facts-panel-hint">Define who the AI is talking to. Saved here in the Facts Canvas, separate from the main prompt.</p>
+      <div id="facts-persona-view"></div>
+    </div>
+
+    <!-- Glossary tab -->
+    <div class="facts-tab-panel" id="facts-panel-glossary" style="display:none">
+      <p class="facts-panel-hint">Define terms the AI must know and use consistently. Saved here in the Facts Canvas.</p>
+      <div id="facts-glossary-view"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: preview -->
+  <div class="facts-page-preview">
+    <div class="facts-preview-header">
+      <span>Knowledge Base Preview</span>
+    </div>
+    <div class="facts-preview-body">
+      <pre id="facts-output">(Add facts and reference documents on the left)</pre>
+    </div>
+    <div class="preview-footer">
+      <span>Tokens: <strong id="facts-token-count">0</strong></span>
+      <span>Chars: <strong id="facts-char-count">0</strong></span>
+    </div>
+  </div>
+</div>
+
+<script src="facts.js"></script>
+</body>
+</html>

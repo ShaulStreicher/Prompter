@@ -13,6 +13,10 @@
 <header>
   <div class="header-logo">P</div>
   <span class="header-title">Prompter</span>
+  <nav class="page-nav">
+    <a href="index.html" class="nav-link active">🪄 Wizard</a>
+    <a href="facts.html" class="nav-link">📌 Facts</a>
+  </nav>
   <span class="header-subtitle" id="header-subtitle">Claude · New prompt</span>
   <div class="header-actions">
     <div class="autosave-dot" id="autosave-dot" title="Auto-saved"></div>
@@ -32,10 +36,8 @@
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Export
     </button>
-    <button class="btn btn-facts-open" id="btn-facts" title="Open Facts Canvas">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-      Facts
-    </button>
+    <button class="btn btn-ghost" id="btn-collab">🔗 Collaborate</button>
+    <span class="peer-badge" id="peer-badge" style="display:none">👥 <span id="peer-count">0</span> online</span>
     <button class="btn btn-ghost" id="btn-reset" title="Clear all fields">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.3"/></svg>
       Reset
@@ -98,87 +100,8 @@
   </div>
 </div>
 
-<!-- ── FACTS CANVAS ── -->
-<div id="facts-canvas">
-  <div class="facts-canvas-inner">
-    <div class="facts-canvas-header">
-      <div class="facts-canvas-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        Facts &amp; Knowledge Base
-      </div>
-      <span class="facts-canvas-note">Separate from the main prompt — use as a reference layer for your AI context</span>
-      <button class="modal-close facts-close-btn" id="facts-close">×</button>
-    </div>
-
-    <div class="facts-canvas-body">
-      <!-- LEFT: editor -->
-      <div class="facts-editor">
-        <div class="facts-tabs" id="facts-canvas-tabs">
-          <button class="facts-tab active" data-tab="facts">📌 Key Facts</button>
-          <button class="facts-tab" data-tab="docs">📄 Reference Docs</button>
-          <button class="facts-tab" data-tab="persona">👤 Persona</button>
-          <button class="facts-tab" data-tab="glossary">📖 Glossary</button>
-        </div>
-
-        <!-- Facts tab -->
-        <div class="facts-tab-panel" id="facts-panel-facts">
-          <p class="facts-panel-hint">Fixed facts the AI must treat as true. Prevents hallucination on known data.</p>
-          <div class="facts-kv-header"><span>Key</span><span>Value</span></div>
-          <div id="facts-list"></div>
-          <button class="add-btn" id="btn-add-fact">+ Add fact</button>
-        </div>
-
-        <!-- Docs tab -->
-        <div class="facts-tab-panel" id="facts-panel-docs" style="display:none">
-          <p class="facts-panel-hint">Paste in documents, policies, FAQs, or any text the AI should use as its knowledge base.</p>
-          <div id="docs-list"></div>
-          <button class="add-btn" id="btn-add-doc">+ Add document</button>
-        </div>
-
-        <!-- Persona tab (editable, stored in Facts) -->
-        <div class="facts-tab-panel" id="facts-panel-persona" style="display:none">
-          <p class="facts-panel-hint">Define who the AI is talking to. Saved here in the Facts Canvas, separate from the main prompt.</p>
-          <div id="facts-persona-view"></div>
-        </div>
-
-        <!-- Glossary tab (editable, stored in Facts) -->
-        <div class="facts-tab-panel" id="facts-panel-glossary" style="display:none">
-          <p class="facts-panel-hint">Define terms the AI must know and use consistently. Saved here in the Facts Canvas.</p>
-          <div id="facts-glossary-view"></div>
-        </div>
-      </div>
-
-      <!-- RIGHT: preview -->
-      <div class="facts-preview">
-        <div class="facts-preview-header">
-          <span>Knowledge Base Preview</span>
-          <div class="preview-actions">
-            <span class="copy-feedback" id="facts-copy-feedback">Copied!</span>
-            <button class="btn btn-dark btn-sm" id="btn-facts-copy">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              Copy
-            </button>
-            <button class="btn btn-primary btn-sm" id="btn-facts-download">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download
-            </button>
-          </div>
-        </div>
-        <div class="facts-preview-body">
-          <pre id="facts-output">(Add facts and reference documents on the left)</pre>
-        </div>
-        <div class="preview-footer">
-          <span>Tokens: <strong id="facts-token-count">0</strong></span>
-          <span>Chars: <strong id="facts-char-count">0</strong></span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ── APP LAYOUT ── -->
 <div class="app-layout">
-
   <!-- SIDEBAR -->
   <nav class="sidebar">
     <div class="sidebar-header">Build Progress</div>
@@ -212,7 +135,56 @@
       <span>Chars: <strong id="char-count">0</strong></span>
     </div>
   </aside>
+</div>
 
+<!-- ── COLLAB MODAL ── -->
+<div class="modal-overlay" id="collab-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span>🔗 Live Collaboration</span>
+      <button class="modal-close" id="collab-modal-close">×</button>
+    </div>
+    <div class="modal-body" id="collab-modal-body">
+      <div id="collab-create-section">
+        <button class="btn btn-primary" id="btn-create-room" style="width:100%">Create new room</button>
+      </div>
+      <div class="collab-divider">— or —</div>
+      <div id="collab-join-section">
+        <label>Join with room code</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="collab-join-input" placeholder="e.g. ABC123" style="text-transform:uppercase;letter-spacing:2px">
+          <button class="btn btn-secondary" id="btn-join-room">Join</button>
+        </div>
+      </div>
+      <div id="collab-room-section" style="display:none">
+        <div class="collab-room-info">
+          <div class="collab-room-code" id="collab-room-code"></div>
+          <button class="btn btn-ghost btn-sm" id="btn-copy-room-link">Copy link</button>
+        </div>
+        <div class="collab-status" id="collab-status">Waiting for peers...</div>
+        <div class="collab-peers" id="collab-peers">Peers: 0 online</div>
+        <button class="btn btn-ghost" id="btn-leave-room" style="width:100%;margin-top:8px">Leave room</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── VERSION NOTE MODAL ── -->
+<div class="modal-overlay" id="version-note-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span>Add version note</span>
+      <button class="modal-close" id="version-note-close">×</button>
+    </div>
+    <div class="modal-body">
+      <label>Note for this version</label>
+      <textarea id="version-note-input" placeholder="e.g. Added few-shot examples, tightened constraints..." rows="3"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="version-note-cancel">Cancel</button>
+      <button class="btn btn-primary" id="version-note-save">Save note</button>
+    </div>
+  </div>
 </div>
 
 <script src="app.js"></script>
