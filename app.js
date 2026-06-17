@@ -116,7 +116,7 @@ let autosaveTimer = null;
 let shotCounter   = 0;
 
 // ─── Collaboration ────────────────────────────────────────────────────────────
-const COLLAB_SERVER = 'REPLACE_WITH_RENDER_URL'; // e.g. wss://prompter-collab.onrender.com
+const COLLAB_SERVER = 'https://prompter-4ej4.onrender.com'; // e.g. wss://prompter-collab.onrender.com
 const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:3001' : COLLAB_SERVER;
 let ws = null, roomId = null, peerCount = 0, isSyncing = false;
 let broadcastTimer = null;
