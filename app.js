@@ -1024,7 +1024,10 @@ function triggerDownload(blob, filename) {
 }
 
 // ─── Auto-save ────────────────────────────────────────────────────────────────
+let isDirty = false;
+
 function autosaveAndPreview() {
+  isDirty = true;
   updatePreview();
   scheduleAutosave();
   broadcastState();
@@ -1101,10 +1104,23 @@ function confirmSave() {
   }
   setSaves(saves);
   closeSaveNameModal();
+  isDirty = false;
   const savedIdx = saves.findIndex(s => s.name === name);
   currentVersionLabel = `v${saves[savedIdx]?.versions?.length || 1}`;
   updateHeaderSubtitle();
   showSaveToast(name, savedIdx, 0);
+}
+
+function saveAsCopy() {
+  const base = appState.promptName || 'Untitled';
+  const copyName = `${base} (copy)`;
+  document.getElementById('save-name-input').value = copyName;
+  document.getElementById('savename-modal').classList.add('open');
+  setTimeout(() => {
+    const el = document.getElementById('save-name-input');
+    el.focus();
+    el.select();
+  }, 80);
 }
 
 function deleteSave(name) {
@@ -1129,6 +1145,7 @@ function loadSave(name) {
   if (!save) return;
   const total = (save.versions || []).length;
   currentVersionLabel = total ? `v${total}` : '';
+  isDirty = false;
   restoreState(save.state);
   closeSavedModal();
   showToast(`Loaded "${name}"`);
@@ -1276,7 +1293,7 @@ function exportJSON() {
 
 // ─── Reset ────────────────────────────────────────────────────────────────────
 function resetAll() {
-  if (!confirm('Clear all fields and start over?')) return;
+  if (isDirty && !confirm('You have unsaved changes. Start a new prompt anyway?')) return;
   localStorage.removeItem(AUTOSAVE_KEY);
   appState = {
     model:'claude', role:'',
@@ -1292,8 +1309,9 @@ function resetAll() {
   };
   currentStep = 0;
   currentVersionLabel = '';
+  isDirty = false;
   renderAll();
-  showToast('Cleared -- starting fresh');
+  showToast('Cleared — starting fresh');
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -1496,6 +1514,7 @@ function closeCollabModal() { document.getElementById('collab-modal').classList.
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-saved').addEventListener('click', openSavedModal);
   document.getElementById('btn-save').addEventListener('click', savePromptAs);
+  document.getElementById('btn-save-copy').addEventListener('click', saveAsCopy);
   document.getElementById('btn-export').addEventListener('click', exportJSON);
   document.getElementById('btn-upload').addEventListener('click', openUploadModal);
   document.getElementById('btn-copy').addEventListener('click', copyPrompt);

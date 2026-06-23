@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompter — Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.help-layout {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+.help-hero {
+  text-align: center;
+  padding: 48px 0 40px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 48px;
+}
+.help-hero h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+.help-hero p {
+  font-size: 1.05rem;
+  color: var(--muted);
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+.help-section {
+  margin-bottom: 52px;
+}
+.help-section h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.help-section h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin-left: 8px;
+}
+.help-section p, .help-section li {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.75;
+}
+.help-section ul, .help-section ol {
+  padding-left: 20px;
+  margin: 10px 0;
+}
+.help-section li { margin-bottom: 6px; }
+.help-callout {
+  background: var(--surface2);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+  margin: 16px 0;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--text);
+}
+.help-callout strong { color: var(--accent); }
+.steps-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.step-card .step-num {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.step-card .step-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.step-card .step-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 0.85rem;
+}
+.compare-table th {
+  background: var(--surface2);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.compare-table td {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  line-height: 1.5;
+}
+.compare-table tr:nth-child(even) td { background: var(--surface2); }
+.bad  { color: #c0392b; }
+.good { color: #27ae60; }
+.kbd {
+  display: inline-block;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.feature-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 12px 14px;
+}
+.feature-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.feature-item strong { display: block; font-size: 0.88rem; margin-bottom: 2px; }
+.feature-item span { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">P</div>
+  <span class="header-title">Prompter</span>
+  <nav class="page-nav">
+    <a href="index.html" class="nav-link">🪄 Wizard</a>
+    <a href="facts.html" class="nav-link">📌 Facts</a>
+    <a href="help.html" class="nav-link active">📖 Guide</a>
+  </nav>
+  <span class="header-subtitle">How to build great prompts</span>
+</header>
+
+<div class="help-layout">
+
+  <div class="help-hero">
+    <h1>Write prompts that actually work</h1>
+    <p>Most AI prompts are too vague to produce consistent, high-quality results. Prompter walks you through the components that separate a good prompt from a great one — and builds the output for you.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="help-section">
+    <h2>Why prompt quality matters</h2>
+    <p>An AI model is only as good as the instructions you give it. A vague prompt produces vague output. A structured prompt gives the model everything it needs to reason correctly, stay in character, and format its answer the way you want.</p>
+
+    <table class="compare-table">
+      <tr>
+        <th>Weak prompt</th>
+        <th>Strong prompt (built with Prompter)</th>
+      </tr>
+      <tr>
+        <td class="bad">"Write me a summary."</td>
+        <td class="good">"You are a senior analyst. Summarize the following document into 5 bullet points for a non-technical audience. Use plain English. If anything is unclear, flag it rather than guessing."</td>
+      </tr>
+      <tr>
+        <td class="bad">"Help me with my code."</td>
+        <td class="good">"You are an expert TypeScript engineer. Review the code below. Flag bugs, suggest improvements, and explain your reasoning step by step. Respond in a code block followed by a plain-English explanation."</td>
+      </tr>
+    </table>
+
+    <div class="help-callout">
+      <strong>The research is clear:</strong> structured prompts with explicit role, context, format, and constraints consistently outperform free-form requests — across every major model. Prompter enforces this structure so you don't have to remember it.
+    </div>
+  </div>
+
+  <!-- THE 11 STEPS -->
+  <div class="help-section">
+    <h2>The 11 building blocks</h2>
+    <p>Prompter guides you through 11 components. Each one solves a specific failure mode in AI outputs.</p>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">Step 1</div>
+        <div class="step-name">Target Model</div>
+        <div class="step-desc">Different models prefer different syntax — XML tags for Claude, delimiters for GPT. Pick your model and Prompter adapts the output format automatically.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 2</div>
+        <div class="step-name">Role</div>
+        <div class="step-desc">Assigning a role (e.g. "senior data scientist") activates domain knowledge and calibrates confidence. Without a role the model defaults to a generic assistant voice.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 3</div>
+        <div class="step-name">Context</div>
+        <div class="step-desc">Tell the model about your company, domain, and audience. Context prevents generic answers and anchors the output to your actual situation.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 4</div>
+        <div class="step-name">Objective</div>
+        <div class="step-desc">State precisely what you want the model to do. Prompter provides task-type starters (analyze, summarize, generate…) to help you frame this clearly.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 5</div>
+        <div class="step-name">Positive Rules</div>
+        <div class="step-desc">Behaviors the model must follow — cite sources, use bullet points, always explain reasoning. These become hard requirements, not suggestions.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 6</div>
+        <div class="step-name">Negative Constraints</div>
+        <div class="step-desc">What the model must never do — avoid jargon, don't make up statistics, never break character. Explicit negatives are often more effective than positive rules.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 7</div>
+        <div class="step-name">Tone</div>
+        <div class="step-desc">Three sliders (formality, detail level, energy) plus tone tags give fine-grained control over voice. Critical for brand-consistent content.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 8</div>
+        <div class="step-name">Output Format</div>
+        <div class="step-desc">Specify structure — markdown, JSON, bullet list, table, or a custom template. Models follow explicit format instructions far more reliably than implied ones.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 9</div>
+        <div class="step-name">Few-shot Examples</div>
+        <div class="step-desc">Input/output pairs show the model exactly what "correct" looks like. Even one example dramatically improves consistency on structured tasks.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 10</div>
+        <div class="step-name">Chain of Thought</div>
+        <div class="step-desc">Instruct the model to reason before it answers. Essential for logic, math, or multi-step tasks where jumping straight to an answer produces errors.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 11</div>
+        <div class="step-name">Fallback Behavior</div>
+        <div class="step-desc">Define what happens when the model is uncertain or the request is out of scope. Without this, models hallucinate rather than admitting they don't know.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW TO USE -->
+  <div class="help-section">
+    <h2>How to use Prompter</h2>
+    <ol>
+      <li><strong>Start in the Wizard</strong> — Click <em>🪄 Wizard</em> in the nav. Work through each step in order, or click any summary card to jump back to a completed step.</li>
+      <li><strong>Fill only what you need</strong> — You don't have to complete every step. The preview on the right updates in real time so you can see what each field adds.</li>
+      <li><strong>Use the Facts page for reference material</strong> — Paste in company policies, product docs, or glossary terms. This builds a separate knowledge-base block you can copy alongside your prompt.</li>
+      <li><strong>Save as you iterate</strong> — Click <em>Save</em> to snapshot the current state. Each save creates a new version. Click <em>Saved → History</em> to see and restore past versions.</li>
+      <li><strong>Copy or download the output</strong> — Use the <em>Copy</em> button in the preview panel, or <em>Download</em> to get a .txt file. Paste directly into your AI tool of choice.</li>
+      <li><strong>Collaborate with teammates</strong> — Click <em>🔗 Collaborate</em>, set up your own WebSocket server (see the README), and share a room code. Changes sync in real time.</li>
+    </ol>
+
+    <div class="help-callout">
+      <strong>Tip:</strong> Build one strong "base prompt" per use case, save it, then use <em>Save as Copy</em> to branch variants. Version history lets you roll back if an experiment makes things worse.
+    </div>
+  </div>
+
+  <!-- FEATURES REFERENCE -->
+  <div class="help-section">
+    <h2>Features at a glance</h2>
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="feature-icon">🔄</div>
+        <div>
+          <strong>Version control</strong>
+          <span>Every Save creates a snapshot. Open Saved Prompts → click History on any prompt to browse and restore past versions. Add notes to each version to track what changed.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📋</div>
+        <div>
+          <strong>Save as Copy</strong>
+          <span>The Copy button in the header opens the save dialog pre-filled with "[name] (copy)" so you can branch a new variant without overwriting the original.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📤</div>
+        <div>
+          <strong>Export / Import</strong>
+          <span>Export any prompt as a .json file to share or back up. Upload it on any device to restore the full prompt with all settings intact.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📌</div>
+        <div>
+          <strong>Facts page</strong>
+          <span>Key facts, reference documents, persona definition, and glossary — all in a separate page that produces its own copyable output block. Use it as an addendum to your main prompt.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🔗</div>
+        <div>
+          <strong>Live collaboration</strong>
+          <span>Real-time multi-user editing. Changes sync only when both users are on the same prompt name. Requires deploying the included server.js — see the README.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">⌨️</div>
+        <div>
+          <strong>Keyboard shortcuts</strong>
+          <span><kbd class="kbd">Ctrl/⌘ S</kbd> Save &nbsp;·&nbsp; <kbd class="kbd">Ctrl/⌘ ⇧ C</kbd> Copy prompt &nbsp;·&nbsp; <kbd class="kbd">Alt →</kbd> Next step &nbsp;·&nbsp; <kbd class="kbd">Alt ←</kbd> Previous step</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPS -->
+  <div class="help-section">
+    <h2>Quick tips</h2>
+    <ul>
+      <li><strong>Start with Role + Objective.</strong> These two fields alone produce dramatically better output than a bare request.</li>
+      <li><strong>Add at least one few-shot example</strong> for any task where format matters — the model will mirror it exactly.</li>
+      <li><strong>Use Negative Constraints</strong> to prevent the model's most common failure modes for your specific task.</li>
+      <li><strong>Enable Chain of Thought</strong> for anything involving reasoning, math, or multi-step logic. It's often the single biggest quality boost.</li>
+      <li><strong>Set a Fallback Behavior.</strong> "Ask for clarification" is a safe default that prevents confident wrong answers.</li>
+      <li><strong>Iterate in versions.</strong> Make one change per save so you can pinpoint what improved (or broke) the output.</li>
+    </ul>
+  </div>
+
+</div>
+
+</body>
+</html>
