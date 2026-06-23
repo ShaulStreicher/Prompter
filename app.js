@@ -1,6 +1,173 @@
 // ─── Constants ────────────────────────────────────────────────────────────────
 const AUTOSAVE_KEY = 'promptbuilder_autosave';
 const SAVES_KEY    = 'promptbuilder_saves';
+const FILE_SUPPORTED = ('showSaveFilePicker' in window || 'showOpenFilePicker' in window);
+
+// ─── File persistence (File System Access API + IndexedDB handle store) ───────
+let _savesFileHandle = null; // FileSystemFileHandle
+
+function _openHandleDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('prompter_file_db', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('handles');
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+async function _loadStoredHandle() {
+  try {
+    const db = await _openHandleDB();
+    return await new Promise(resolve => {
+      const tx  = db.transaction('handles', 'readonly');
+      const req = tx.objectStore('handles').get('saves');
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror   = () => resolve(null);
+    });
+  } catch { return null; }
+}
+async function _storeHandle(handle) {
+  try {
+    const db = await _openHandleDB();
+    await new Promise(resolve => {
+      const tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').put(handle, 'saves');
+      tx.oncomplete = resolve;
+    });
+  } catch {}
+}
+async function _clearStoredHandle() {
+  try {
+    const db = await _openHandleDB();
+    await new Promise(resolve => {
+      const tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').delete('saves');
+      tx.oncomplete = resolve;
+    });
+  } catch {}
+}
+
+async function _readSavesFromFile(handle) {
+  const file = await handle.getFile();
+  const text = await file.text();
+  return JSON.parse(text);
+}
+async function _writeSavesToFile(saves) {
+  if (!_savesFileHandle) return;
+  try {
+    const writable = await _savesFileHandle.createWritable();
+    await writable.write(JSON.stringify(saves, null, 2));
+    await writable.close();
+  } catch (e) {
+    console.warn('File write failed:', e);
+  }
+}
+
+async function pickSavesFile() {
+  if (!FILE_SUPPORTED) { showToast('Your browser doesn\'t support file linking. Use Chrome or Edge.'); return; }
+  try {
+    // Try to pick an existing file or create new
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'Prompter saves', accept: { 'application/json': ['.json'] } }],
+      multiple: false,
+    }).catch(async () => {
+      // User may want to create new file instead
+      const h = await window.showSaveFilePicker({
+        suggestedName: 'prompter-saves.json',
+        types: [{ description: 'Prompter saves', accept: { 'application/json': ['.json'] } }],
+      });
+      return [h];
+    });
+    if (!handle) return;
+    _savesFileHandle = handle;
+    await _storeHandle(handle);
+    // Load existing saves from file (if any) and merge with localStorage
+    try {
+      const fileSaves = await _readSavesFromFile(handle);
+      if (Array.isArray(fileSaves) && fileSaves.length) {
+        localStorage.setItem(SAVES_KEY, JSON.stringify(fileSaves));
+        showToast(`Linked — ${fileSaves.length} saves loaded from file`);
+      } else {
+        // Write current localStorage saves to the new file
+        await _writeSavesToFile(getSaves());
+        showToast('Save file linked — saves will persist beyond cache clears');
+      }
+    } catch {
+      await _writeSavesToFile(getSaves());
+      showToast('Save file linked');
+    }
+    updateFileSyncIndicator();
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('Could not link file: ' + e.message);
+  }
+}
+
+async function unlinkSavesFile() {
+  _savesFileHandle = null;
+  await _clearStoredHandle();
+  updateFileSyncIndicator();
+  showToast('Save file unlinked — saves now use browser storage only');
+}
+
+function updateFileSyncIndicator() {
+  const btn = document.getElementById('btn-file-sync');
+  if (!btn) return;
+  if (_savesFileHandle) {
+    btn.title = 'Saves linked to file on your computer — click to unlink';
+    btn.classList.add('file-sync-active');
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> Saved to file`;
+  } else {
+    btn.title = 'Link a file so saves persist beyond cache clears';
+    btn.classList.remove('file-sync-active');
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> Link file`;
+  }
+}
+
+async function initFileStorage() {
+  if (!FILE_SUPPORTED) return;
+  const handle = await _loadStoredHandle();
+  if (!handle) return;
+  try {
+    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    if (perm === 'granted') {
+      _savesFileHandle = handle;
+      const fileSaves = await _readSavesFromFile(handle);
+      if (Array.isArray(fileSaves)) localStorage.setItem(SAVES_KEY, JSON.stringify(fileSaves));
+    } else if (perm === 'prompt') {
+      // Show a restore banner instead of immediately prompting
+      _showFileRestoreBanner(handle);
+    }
+  } catch {
+    await _clearStoredHandle();
+  }
+  updateFileSyncIndicator();
+}
+
+function _showFileRestoreBanner(handle) {
+  const banner = document.createElement('div');
+  banner.id = 'file-restore-banner';
+  banner.innerHTML = `
+    <span>💾 A save file was linked previously. Restore access to load your saves?</span>
+    <button id="file-restore-yes" class="btn btn-primary btn-sm">Restore</button>
+    <button id="file-restore-no"  class="btn btn-ghost btn-sm">Dismiss</button>`;
+  document.body.appendChild(banner);
+  document.getElementById('file-restore-yes').onclick = async () => {
+    banner.remove();
+    try {
+      const perm = await handle.requestPermission({ mode: 'readwrite' });
+      if (perm === 'granted') {
+        _savesFileHandle = handle;
+        const fileSaves = await _readSavesFromFile(handle);
+        if (Array.isArray(fileSaves)) {
+          localStorage.setItem(SAVES_KEY, JSON.stringify(fileSaves));
+          showToast(`${fileSaves.length} saves restored from file`);
+          renderAll();
+        }
+        updateFileSyncIndicator();
+      }
+    } catch {}
+  };
+  document.getElementById('file-restore-no').onclick = () => banner.remove();
+}
 
 const TASK_TYPES = [
   { value: 'analyze',   label: 'Analyze / Evaluate' },
@@ -1188,7 +1355,10 @@ function restoreState(state) {
 function getSaves() {
   try { return JSON.parse(localStorage.getItem(SAVES_KEY)) || []; } catch (e) { return []; }
 }
-function setSaves(saves) { localStorage.setItem(SAVES_KEY, JSON.stringify(saves)); }
+function setSaves(saves) {
+  localStorage.setItem(SAVES_KEY, JSON.stringify(saves));
+  _writeSavesToFile(saves); // async, no-op if no file linked
+}
 
 function savePromptAs() {
   document.getElementById('save-name-input').value = appState.promptName || '';
@@ -1704,6 +1874,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-save-copy').addEventListener('click', saveAsCopy);
   document.getElementById('btn-export').addEventListener('click', exportJSON);
   document.getElementById('btn-upload').addEventListener('click', openUploadModal);
+  document.getElementById('btn-file-sync').addEventListener('click', () => {
+    if (_savesFileHandle) unlinkSavesFile(); else pickSavesFile();
+  });
   document.getElementById('btn-copy').addEventListener('click', copyPrompt);
   document.getElementById('btn-download').addEventListener('click', downloadPrompt);
   document.getElementById('btn-reset').addEventListener('click', resetAll);
@@ -1786,6 +1959,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // check URL for ?room= param
   const urlRoom = new URLSearchParams(window.location.search).get('room');
   if (urlRoom) connectCollab(urlRoom.toUpperCase());
+
+  // Init file persistence (async — may show restore banner)
+  initFileStorage().then(() => updateFileSyncIndicator());
 
   // Restore autosave or render fresh
   try {

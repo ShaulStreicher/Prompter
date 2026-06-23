@@ -1228,3 +1228,27 @@ input[type="range"]::-webkit-slider-thumb {
 .version-test-note { font-size:0.74rem; color:var(--muted); font-style:italic; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 .version-test-btn { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:2px 7px; font-size:0.75rem; cursor:pointer; color:var(--muted); flex-shrink:0; font-family:inherit; transition:all 0.15s; }
 .version-test-btn:hover { color:var(--accent); border-color:var(--accent); }
+
+/* ── FILE SYNC ── */
+.file-sync-active {
+  background: rgba(45,158,110,0.1) !important;
+  border-color: rgba(45,158,110,0.4) !important;
+  color: #2d9e6e !important;
+}
+#file-restore-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.84rem;
+  z-index: 9999;
+  white-space: nowrap;
+}
