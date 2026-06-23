@@ -1166,3 +1166,24 @@ input[type="range"]::-webkit-slider-thumb {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ── NEW PROMPT BUTTON ── */
+.btn-new-prompt {
+  background: var(--surface);
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.btn-new-prompt:hover {
+  background: var(--accent);
+  color: #fff;
+}
