@@ -41,6 +41,10 @@
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Export
     </button>
+    <button class="btn btn-ghost" id="btn-templates" title="Start from a template">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Templates
+    </button>
     <button class="btn btn-ghost" id="btn-collab">🔗 Collaborate</button>
     <span class="peer-badge" id="peer-badge" style="display:none">👥 <span id="peer-count">0</span> online</span>
     <button class="btn btn-new-prompt" id="btn-reset" title="Clear all fields and start a new prompt">
@@ -138,6 +142,10 @@
     <div class="preview-footer">
       <span>Tokens: <strong id="token-count">0</strong></span>
       <span>Chars: <strong id="char-count">0</strong></span>
+      <div class="token-budget">
+        <div class="budget-bar"><div class="budget-fill ok" id="token-budget-bar" style="width:0%"></div></div>
+        <span id="token-budget-pct">0% of context</span>
+      </div>
     </div>
   </aside>
 </div>
@@ -207,6 +215,38 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" id="version-note-cancel">Cancel</button>
       <button class="btn btn-primary" id="version-note-save">Save note</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TEMPLATE MODAL ── -->
+<div class="modal-overlay" id="template-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span>🚀 Start from a template</span>
+      <button class="modal-close" id="template-modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="template-filter" id="template-filter"></div>
+      <div class="template-grid" id="template-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TEST NOTE MODAL ── -->
+<div class="modal-overlay" id="test-note-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span>📝 Test result</span>
+      <button class="modal-close" id="test-note-close">×</button>
+    </div>
+    <div class="modal-body">
+      <label>Paste the AI's response or note what worked / didn't</label>
+      <textarea id="test-note-input" rows="6" placeholder="e.g. Claude produced a well-structured response but ignored the tone constraint. Next: tighten the tone rules."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="test-note-cancel">Cancel</button>
+      <button class="btn btn-primary" id="test-note-save">Save result</button>
     </div>
   </div>
 </div>

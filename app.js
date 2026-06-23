@@ -45,6 +45,11 @@ const MODEL_LABELS = {
   llama: 'Llama', mistral: 'Mistral', generic: 'Generic',
 };
 
+const MODEL_LIMITS = {
+  claude: 200000, gpt: 128000, gemini: 1000000,
+  llama: 8192, mistral: 32000, generic: 32000,
+};
+
 const ROLE_PRESETS = [
   { label: 'Software Engineer', value: 'You are an expert software engineer with deep knowledge of modern web development, system design, and best practices.' },
   { label: 'Data Scientist',    value: 'You are a senior data scientist and machine learning expert with expertise in statistics, Python, and ML frameworks.' },
@@ -57,6 +62,32 @@ const ROLE_PRESETS = [
 ];
 
 const TONE_TAGS = ['Empathetic','Authoritative','Friendly','Witty','Analytical','Inspirational','Socratic','Direct','Diplomatic'];
+
+const TEMPLATES = [
+  { name:'Customer Support Agent', category:'Support', emoji:'🎧', description:'Handles inquiries with empathy and accuracy', state:{ model:'claude', role:'You are a helpful, empathetic customer support agent. Your goal is to resolve issues quickly while making the customer feel heard and valued.', ctx:{ company:'', domain:'Customer Support', audience:'Customers seeking help', extra:'' }, objective:{ type:'answer', description:'Resolve the customer issue below accurately and empathetically.' }, positiveRules:['Acknowledge the customer\'s frustration before offering a solution','Always confirm the resolution at the end','Offer a follow-up if the issue might recur'], negativeRules:['Never blame the customer','Don\'t promise outcomes you can\'t guarantee','Avoid corporate jargon'], tone:{ formality:'60', detail:'50', energy:'40', tags:['Empathetic','Friendly'] }, format:{ type:'plain', length:'concise', template:'' }, fewShots:[], cot:{ enabled:false, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'ask', custom:'' }, promptName:'' } },
+  { name:'Code Reviewer', category:'Code', emoji:'🔍', description:'Reviews PRs for bugs, style, and best practices', state:{ model:'claude', role:'You are a senior software engineer with 10+ years of experience across multiple languages and frameworks. You review code with a sharp eye for correctness, security, and maintainability.', ctx:{ company:'', domain:'Software Engineering', audience:'Development team', extra:'' }, objective:{ type:'analyze', description:'Review the code below. Identify bugs, security issues, style violations, and suggest improvements.' }, positiveRules:['Organize findings by severity: Critical / Warning / Suggestion','Include corrected code snippets for every issue','Explain the WHY behind each piece of feedback'], negativeRules:['Don\'t nitpick purely stylistic choices unless they hurt readability','Don\'t rewrite working code unnecessarily'], tone:{ formality:'60', detail:'80', energy:'40', tags:['Analytical','Direct'] }, format:{ type:'markdown', length:'', template:'' }, fewShots:[], cot:{ enabled:true, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'ask', custom:'' }, promptName:'' } },
+  { name:'SEO Blog Writer', category:'Writing', emoji:'✍️', description:'Writes engaging, SEO-optimized long-form articles', state:{ model:'claude', role:'You are a professional content strategist and SEO copywriter who creates high-ranking, reader-first content. You understand both search intent and compelling narrative.', ctx:{ company:'', domain:'Content Marketing', audience:'Online readers and search engines', extra:'' }, objective:{ type:'generate', description:'Write a comprehensive, SEO-optimized blog post on the topic below.' }, positiveRules:['Start with a hook that addresses the reader\'s pain point','Use the primary keyword naturally in H1, first paragraph, and subheadings','Include a clear CTA at the end'], negativeRules:['No keyword stuffing','Avoid generic filler phrases like "In today\'s world..."','Don\'t write passive voice more than 10% of the time'], tone:{ formality:'40', detail:'70', energy:'60', tags:['Friendly','Inspirational'] }, format:{ type:'markdown', length:'long', template:'' }, fewShots:[], cot:{ enabled:false, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'ask', custom:'' }, promptName:'' } },
+  { name:'Data Analyst', category:'Analysis', emoji:'📊', description:'Analyzes data and surfaces actionable insights', state:{ model:'claude', role:'You are a senior data analyst with expertise in statistics, data visualization, and translating numbers into business decisions.', ctx:{ company:'', domain:'Data & Analytics', audience:'Business stakeholders', extra:'' }, objective:{ type:'analyze', description:'Analyze the data below and provide actionable insights with supporting evidence.' }, positiveRules:['Lead with the top 3 insights in plain English','Back every claim with specific numbers from the data','Suggest next steps or further analysis where relevant'], negativeRules:['Don\'t overstate statistical significance','Avoid technical jargon without explanation','Never fabricate data points'], tone:{ formality:'60', detail:'80', energy:'40', tags:['Analytical','Authoritative'] }, format:{ type:'markdown', length:'', template:'' }, fewShots:[], cot:{ enabled:true, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'best-effort', custom:'' }, promptName:'' } },
+  { name:'Legal Summarizer', category:'Analysis', emoji:'⚖️', description:'Summarizes contracts and legal docs in plain English', state:{ model:'claude', role:'You are an experienced legal analyst with expertise in contract law, regulatory compliance, and corporate agreements. You translate complex legal language into clear, actionable summaries.', ctx:{ company:'', domain:'Legal', audience:'Non-legal business stakeholders', extra:'' }, objective:{ type:'summarize', description:'Summarize the legal document below in plain English, highlighting key obligations, risks, and deadlines.' }, positiveRules:['Structure output as: Overview → Key Terms → Obligations → Risks → Deadlines','Flag any unusual or potentially unfavorable clauses','Use plain English — no unexplained legalese'], negativeRules:['Never provide definitive legal advice','Don\'t omit clauses that seem minor but carry risk'], tone:{ formality:'70', detail:'80', energy:'30', tags:['Authoritative','Direct'] }, format:{ type:'markdown', length:'', template:'' }, fewShots:[], cot:{ enabled:false, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'partial', custom:'' }, promptName:'' } },
+  { name:'Product Manager', category:'Business', emoji:'🗺️', description:'Writes PRDs, specs, and product strategy docs', state:{ model:'claude', role:'You are an expert product manager with experience at high-growth tech companies, skilled in roadmapping, user research synthesis, and cross-functional communication.', ctx:{ company:'', domain:'Product Management', audience:'Engineering, design, and executive stakeholders', extra:'' }, objective:{ type:'generate', description:'Write a product requirements document (PRD) or spec for the feature below.' }, positiveRules:['Always include: Problem Statement, User Stories, Success Metrics, and Out-of-Scope','Lead every section with user impact, not technical implementation','Include open questions at the end'], negativeRules:['Don\'t include implementation details in the requirements section','Avoid vague success criteria like "improve user experience"'], tone:{ formality:'60', detail:'70', energy:'50', tags:['Direct','Analytical'] }, format:{ type:'markdown', length:'', template:'' }, fewShots:[], cot:{ enabled:false, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'ask', custom:'' }, promptName:'' } },
+  { name:'Email Copywriter', category:'Writing', emoji:'📧', description:'Writes persuasive, high-converting emails', state:{ model:'claude', role:'You are a direct response copywriter specializing in email marketing with a track record of above-average open and click rates.', ctx:{ company:'', domain:'Email Marketing', audience:'Email subscribers or prospects', extra:'' }, objective:{ type:'generate', description:'Write a compelling marketing email for the campaign below.' }, positiveRules:['Write a subject line + preview text first','Open with the reader\'s pain point or desire','One clear CTA per email'], negativeRules:['No ALL CAPS except sparingly in subject lines','Avoid spam trigger words (free, guarantee, act now)','Don\'t bury the CTA below the fold'], tone:{ formality:'40', detail:'50', energy:'70', tags:['Friendly','Witty'] }, format:{ type:'plain', length:'concise', template:'' }, fewShots:[], cot:{ enabled:false, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'ask', custom:'' }, promptName:'' } },
+  { name:'Technical Writer', category:'Writing', emoji:'📘', description:'Writes clear API docs and developer guides', state:{ model:'claude', role:'You are a senior technical writer with expertise in developer documentation, API references, and SDK guides. You write for accuracy and clarity.', ctx:{ company:'', domain:'Developer Documentation', audience:'Software developers and engineers', extra:'' }, objective:{ type:'generate', description:'Write clear, complete technical documentation for the API endpoint or feature below.' }, positiveRules:['Include: Overview, Parameters, Request/Response examples, Error codes','Use consistent terminology throughout','Include at least one real-world use case example'], negativeRules:['Don\'t assume the reader knows the internal architecture','No marketing language in technical docs'], tone:{ formality:'70', detail:'90', energy:'30', tags:['Direct','Analytical'] }, format:{ type:'markdown', length:'', template:'' }, fewShots:[], cot:{ enabled:false, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'ask', custom:'' }, promptName:'' } },
+  { name:'SQL Assistant', category:'Code', emoji:'🗄️', description:'Writes and optimizes complex SQL queries', state:{ model:'claude', role:'You are an expert database engineer with deep knowledge of SQL, query optimization, indexing strategies, and database design across PostgreSQL, MySQL, and BigQuery.', ctx:{ company:'', domain:'Data Engineering', audience:'Data analysts and engineers', extra:'' }, objective:{ type:'generate', description:'Write or optimize the SQL query described below.' }, positiveRules:['Always explain the query logic before the code block','Note any indexes that would improve performance','Flag if the query may be slow on large datasets'], negativeRules:['Don\'t use SELECT * in production queries','Don\'t assume table schemas — ask if unclear'], tone:{ formality:'50', detail:'80', energy:'40', tags:['Analytical','Direct'] }, format:{ type:'markdown', length:'', template:'' }, fewShots:[], cot:{ enabled:true, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'ask', custom:'' }, promptName:'' } },
+  { name:'Executive Briefing', category:'Business', emoji:'📋', description:'Writes crisp C-suite briefings and summaries', state:{ model:'claude', role:'You are a senior strategy analyst who distills complex information into clear, decision-ready briefings for C-suite executives with no time to waste.', ctx:{ company:'', domain:'Executive Communications', audience:'C-suite executives and board members', extra:'' }, objective:{ type:'summarize', description:'Create an executive briefing on the topic or document below.' }, positiveRules:['Lead with the 3 things the executive needs to know','Use the BLUF format (Bottom Line Up Front)','Every recommendation must include a risk and an expected outcome'], negativeRules:['No long preambles or background sections','Never exceed one page (approx 400 words)','Avoid hedging language — be direct about recommendations'], tone:{ formality:'80', detail:'60', energy:'50', tags:['Authoritative','Direct'] }, format:{ type:'plain', length:'concise', template:'' }, fewShots:[], cot:{ enabled:false, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'partial', custom:'' }, promptName:'' } },
+  { name:'UX Feedback Reviewer', category:'Analysis', emoji:'🎨', description:'Gives structured UX critique grounded in user goals', state:{ model:'claude', role:'You are a senior UX designer and researcher with expertise in interaction design, accessibility, and user psychology. You give feedback that is specific, constructive, and actionable.', ctx:{ company:'', domain:'Product Design', audience:'Product designers and PMs', extra:'' }, objective:{ type:'analyze', description:'Review the UX design or user flow described below and provide structured feedback.' }, positiveRules:['Structure feedback as: Strengths → Issues → Recommendations','Anchor every critique to a user goal or pain point','Include a severity rating (Critical / Major / Minor) for each issue'], negativeRules:['Don\'t give purely aesthetic opinions without user rationale','Avoid vague feedback like "this feels off"'], tone:{ formality:'50', detail:'80', energy:'50', tags:['Friendly','Analytical'] }, format:{ type:'markdown', length:'', template:'' }, fewShots:[], cot:{ enabled:true, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'ask', custom:'' }, promptName:'' } },
+  { name:'Brainstorm Facilitator', category:'Business', emoji:'💡', description:'Generates diverse, creative ideas on any topic', state:{ model:'claude', role:'You are a creative strategist and innovation facilitator who generates diverse, non-obvious ideas and pushes thinking beyond the obvious.', ctx:{ company:'', domain:'Innovation & Strategy', audience:'Teams looking for fresh ideas', extra:'' }, objective:{ type:'brainstorm', description:'Generate a diverse set of ideas for the challenge below.' }, positiveRules:['Generate at least 10 ideas across different categories','Include at least 2 unconventional or contrarian ideas','For each idea, state the core insight in one sentence'], negativeRules:['Don\'t filter ideas for feasibility in the initial list','Avoid generic suggestions that apply to every topic'], tone:{ formality:'30', detail:'60', energy:'80', tags:['Witty','Inspirational'] }, format:{ type:'markdown', length:'', template:'' }, fewShots:[], cot:{ enabled:false, style:'think-step', custom:'', rules:[], constraints:[], steps:[], separate:false }, fallback:{ type:'best-effort', custom:'' }, promptName:'' } },
+];
+
+const ROLE_SUGGESTIONS = {
+  'Software Engineer': { toneTag:['Analytical','Direct'], rules:['Always include working code examples','Explain trade-offs between approaches','Mention time/space complexity when relevant'], fallback:'ask' },
+  'Data Scientist':    { toneTag:['Analytical'],          rules:['Cite statistical methods used','Note data assumptions and limitations','Include confidence levels where applicable'], fallback:'best-effort' },
+  'Copywriter':        { toneTag:['Witty','Friendly'],    rules:['Write in active voice','Use power words that drive action','Keep sentences under 20 words'], fallback:'ask' },
+  'Product Manager':   { toneTag:['Direct','Analytical'], rules:['Lead with user impact','Include success metrics for every proposal','Distinguish must-haves from nice-to-haves'], fallback:'ask' },
+  'Financial Analyst': { toneTag:['Analytical','Authoritative'], rules:['Cite all data sources','Flag assumptions explicitly','Use consistent number formatting (commas, currency)'], fallback:'best-effort' },
+  'Legal Assistant':   { toneTag:['Authoritative','Direct'], rules:['Never provide definitive legal advice','Cite relevant statutes when known','Flag jurisdiction-specific considerations'], fallback:'partial' },
+  'Creative Writer':   { toneTag:['Witty','Inspirational'], rules:["Show, don't tell",'Vary sentence length for rhythm','Use specific sensory details'], fallback:'best-effort' },
+  'UX Designer':       { toneTag:['Friendly','Analytical'], rules:['Anchor feedback to user goals not aesthetics','Suggest concrete alternatives for every critique','Reference WCAG standards when relevant'], fallback:'ask' },
+};
 
 const COT_STEPS_TAGS = ['Restate the problem','Identify assumptions','List unknowns','Consider edge cases','Evaluate alternatives','Check for contradictions','Estimate confidence','Cite sources / evidence'];
 
@@ -192,7 +223,8 @@ const steps = [
         <div>
           <label>Custom role description</label>
           <textarea id="role-custom" placeholder="You are a..." rows="3">${esc(appState.role)}</textarea>
-        </div>`;
+        </div>
+        <div id="role-suggestions"></div>`;
     },
     bind() {
       document.querySelectorAll('#role-presets .preset-btn').forEach(btn => {
@@ -202,11 +234,15 @@ const steps = [
           const ta = document.getElementById('role-custom');
           ta.value = btn.dataset.value;
           appState.role = btn.dataset.value;
+          renderRoleSuggestions(btn.textContent.trim());
           autosaveAndPreview();
         });
       });
+      let _suggDebounce = null;
       document.getElementById('role-custom').addEventListener('input', e => {
         appState.role = e.target.value;
+        clearTimeout(_suggDebounce);
+        _suggDebounce = setTimeout(() => renderRoleSuggestions(e.target.value), 400);
         autosaveAndPreview();
       });
     },
@@ -971,12 +1007,62 @@ function buildPrompt() {
   return lines.join('\n').trim();
 }
 
+// ─── Smart suggestions ────────────────────────────────────────────────────────
+function renderRoleSuggestions(roleText) {
+  const el = document.getElementById('role-suggestions');
+  if (!el) return;
+  const key = Object.keys(ROLE_SUGGESTIONS).find(k => roleText.toLowerCase().includes(k.toLowerCase()));
+  if (!key) { el.innerHTML = ''; return; }
+  const s = ROLE_SUGGESTIONS[key];
+  const tagChips = s.toneTag.map(t =>
+    `<button class="suggestion-chip" data-type="tag" data-val="${esc(t)}"><span class="chip-add">+</span> ${esc(t)}</button>`
+  ).join('');
+  const ruleChips = s.rules.map(r =>
+    `<button class="suggestion-chip" data-type="rule" data-val="${esc(r)}"><span class="chip-add">+</span> ${esc(r)}</button>`
+  ).join('');
+  const fallbackLabel = {ask:'Ask for clarification','best-effort':'Best-effort + flag uncertainty',partial:'Partial answer + note gaps'}[s.fallback] || s.fallback;
+  el.innerHTML = `
+    <div class="suggestions-panel">
+      <div class="suggestions-panel-title">✨ Suggestions for ${esc(key)}</div>
+      <div class="suggestion-row"><span class="suggestion-row-label">Tone:</span><div class="suggestion-chips">${tagChips}</div></div>
+      <div class="suggestion-row"><span class="suggestion-row-label">Rules:</span><div class="suggestion-chips">${ruleChips}</div></div>
+      <div class="suggestion-row"><span class="suggestion-row-label">Fallback:</span><div class="suggestion-chips">
+        <button class="suggestion-chip" data-type="fallback" data-val="${esc(s.fallback)}"><span class="chip-add">+</span> ${esc(fallbackLabel)}</button>
+      </div></div>
+    </div>`;
+  el.querySelectorAll('.suggestion-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const type = chip.dataset.type, val = chip.dataset.val;
+      if (type === 'tag') {
+        if (!appState.tone.tags.includes(val)) { appState.tone.tags.push(val); showToast(`Added tone: ${val}`); }
+        else { showToast(`"${val}" already applied`); return; }
+      } else if (type === 'rule') {
+        if (!appState.positiveRules.includes(val)) { appState.positiveRules.push(val); showToast('Rule added'); }
+        else { showToast('Rule already added'); return; }
+      } else if (type === 'fallback') {
+        appState.fallback = { type: val, custom: '' };
+        showToast('Fallback behavior set');
+      }
+      chip.disabled = true;
+      chip.style.opacity = '0.45';
+      autosaveAndPreview();
+    });
+  });
+}
+
 // ─── Preview ──────────────────────────────────────────────────────────────────
 function updatePreview() {
-  const prompt = buildPrompt();
+  const prompt  = buildPrompt();
   document.getElementById('prompt-output').innerHTML = syntaxHighlight(prompt);
   document.getElementById('char-count').textContent  = prompt.length.toLocaleString();
-  document.getElementById('token-count').textContent = Math.round(prompt.length / 4).toLocaleString();
+  const tokens = Math.round(prompt.length / 4);
+  document.getElementById('token-count').textContent = tokens.toLocaleString();
+  const limit  = MODEL_LIMITS[appState.model] || 32000;
+  const pct    = Math.min(100, Math.round(tokens / limit * 100));
+  const barEl  = document.getElementById('token-budget-bar');
+  const pctEl  = document.getElementById('token-budget-pct');
+  if (barEl) { barEl.style.width = pct + '%'; barEl.className = 'budget-fill ' + (pct > 80 ? 'danger' : pct > 50 ? 'warn' : 'ok'); }
+  if (pctEl) pctEl.textContent = pct + '% of context';
 }
 
 function syntaxHighlight(text) {
@@ -1026,7 +1112,35 @@ function triggerDownload(blob, filename) {
 // ─── Auto-save ────────────────────────────────────────────────────────────────
 let isDirty = false;
 
+// ─── Undo / Redo ──────────────────────────────────────────────────────────────
+const undoStack = [];
+const redoStack = [];
+let _lastUndoPush = 0;
+
+function undo() {
+  if (undoStack.length < 2) { showToast('Nothing to undo'); return; }
+  redoStack.push(undoStack.pop());
+  restoreState(undoStack[undoStack.length - 1]);
+  isDirty = true;
+  showToast('Undo');
+}
+function redo() {
+  if (!redoStack.length) { showToast('Nothing to redo'); return; }
+  const next = redoStack.pop();
+  undoStack.push(next);
+  restoreState(next);
+  isDirty = true;
+  showToast('Redo');
+}
+
 function autosaveAndPreview() {
+  const now = Date.now();
+  if (now - _lastUndoPush > 1200) {
+    undoStack.push(JSON.parse(JSON.stringify(appState)));
+    if (undoStack.length > 50) undoStack.shift();
+    redoStack.length = 0;
+    _lastUndoPush = now;
+  }
   isDirty = true;
   updatePreview();
   scheduleAutosave();
@@ -1218,7 +1332,11 @@ function toggleVersionHistory(si, save) {
           <span class="version-date">${date}</span>
           ${v.note ? `<span class="version-note-text">${esc(v.note)}</span>` : ''}
         </div>
-        <button class="version-restore-btn" data-si="${si}" data-vi="${vi}">Restore</button>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="version-restore-btn" data-vi="${vi}">Restore</button>
+          <button class="version-test-btn" data-vi="${vi}" title="Add test result">📝</button>
+        </div>
+        ${v.testNote ? `<div class="version-test-note" title="${esc(v.testNote)}">📝 ${esc(v.testNote.slice(0,60))}${v.testNote.length>60?'…':''}</div>` : ''}
       </div>`;
     }).join('');
     el.querySelectorAll('.version-restore-btn').forEach(btn => {
@@ -1237,8 +1355,35 @@ function toggleVersionHistory(si, save) {
         }
       });
     });
+    el.querySelectorAll('.version-test-btn').forEach(btn => {
+      btn.addEventListener('click', () => openTestNoteModal(save.name, parseInt(btn.dataset.vi)));
+    });
   }
   el.style.display = '';
+}
+
+let _testNoteSaveName = '', _testNoteVersionIdx = 0;
+function openTestNoteModal(saveName, versionIdx) {
+  _testNoteSaveName = saveName; _testNoteVersionIdx = versionIdx;
+  const saves = getSaves();
+  const save  = saves.find(s => s.name === saveName);
+  const existing = save && save.versions && save.versions[versionIdx] ? (save.versions[versionIdx].testNote || '') : '';
+  document.getElementById('test-note-input').value = existing;
+  document.getElementById('test-note-modal').classList.add('open');
+  setTimeout(() => document.getElementById('test-note-input').focus(), 80);
+}
+function closeTestNoteModal() { document.getElementById('test-note-modal').classList.remove('open'); }
+function saveTestNote() {
+  const note  = document.getElementById('test-note-input').value.trim();
+  const saves = getSaves();
+  const save  = saves.find(s => s.name === _testNoteSaveName);
+  if (save && save.versions && save.versions[_testNoteVersionIdx] !== undefined) {
+    save.versions[_testNoteVersionIdx].testNote = note;
+    setSaves(saves);
+  }
+  closeTestNoteModal();
+  showToast('Test result saved');
+  renderSavedList();
 }
 
 // ─── Upload ───────────────────────────────────────────────────────────────────
@@ -1498,6 +1643,48 @@ function updateCollabPeersDisplay() {
   if (el) el.textContent = `Peers: ${peerCount} online`;
 }
 
+// ─── Template modal ───────────────────────────────────────────────────────────
+let _activeTplCat = 'All';
+function openTemplateModal() {
+  _activeTplCat = 'All';
+  renderTemplateModal();
+  document.getElementById('template-modal').classList.add('open');
+}
+function closeTemplateModal() { document.getElementById('template-modal').classList.remove('open'); }
+function renderTemplateModal() {
+  const cats = ['All', ...new Set(TEMPLATES.map(t => t.category))];
+  document.getElementById('template-filter').innerHTML = cats.map(c =>
+    `<button class="tpl-cat-btn ${c === _activeTplCat ? 'active' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`
+  ).join('');
+  document.querySelectorAll('.tpl-cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => { _activeTplCat = btn.dataset.cat; renderTemplateModal(); });
+  });
+  const visible = _activeTplCat === 'All' ? TEMPLATES : TEMPLATES.filter(t => t.category === _activeTplCat);
+  document.getElementById('template-grid').innerHTML = visible.map((t, i) => {
+    const idx = TEMPLATES.indexOf(t);
+    return `<div class="tpl-card" data-idx="${idx}">
+      <div class="tpl-card-cat">${esc(t.category)}</div>
+      <div class="tpl-card-icon">${t.emoji}</div>
+      <div class="tpl-card-name">${esc(t.name)}</div>
+      <div class="tpl-card-desc">${esc(t.description)}</div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('.tpl-card').forEach(card => {
+    card.addEventListener('click', () => applyTemplate(parseInt(card.dataset.idx)));
+  });
+}
+function applyTemplate(idx) {
+  if (isDirty && !confirm('You have unsaved changes. Apply template anyway?')) return;
+  const t = TEMPLATES[idx];
+  appState = JSON.parse(JSON.stringify(t.state));
+  currentVersionLabel = '';
+  isDirty = false;
+  currentStep = 0;
+  closeTemplateModal();
+  renderAll();
+  showToast(`Template "${t.name}" applied`);
+}
+
 function openCollabModal() {
   const modal = document.getElementById('collab-modal');
   modal.classList.add('open');
@@ -1575,10 +1762,23 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('version-note-save').addEventListener('click', saveVersionNote);
   document.getElementById('version-note-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeVersionNoteModal(); });
 
+  // test note modal
+  document.getElementById('test-note-close').addEventListener('click', closeTestNoteModal);
+  document.getElementById('test-note-cancel').addEventListener('click', closeTestNoteModal);
+  document.getElementById('test-note-save').addEventListener('click', saveTestNote);
+  document.getElementById('test-note-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeTestNoteModal(); });
+
+  // template modal
+  document.getElementById('btn-templates').addEventListener('click', openTemplateModal);
+  document.getElementById('template-modal-close').addEventListener('click', closeTemplateModal);
+  document.getElementById('template-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeTemplateModal(); });
+
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey||e.metaKey) && e.key === 's') { e.preventDefault(); savePromptAs(); }
     if ((e.ctrlKey||e.metaKey) && e.key === 'c' && e.shiftKey) { e.preventDefault(); copyPrompt(); }
+    if ((e.ctrlKey||e.metaKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); }
+    if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'z') { e.preventDefault(); redo(); }
     if (e.key === 'ArrowRight' && e.altKey) { e.preventDefault(); goTo(currentStep + 1); }
     if (e.key === 'ArrowLeft'  && e.altKey) { e.preventDefault(); goTo(currentStep - 1); }
   });
