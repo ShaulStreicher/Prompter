@@ -110,15 +110,16 @@ async function unlinkSavesFile() {
 
 function updateFileSyncIndicator() {
   const btn = document.getElementById('btn-file-sync');
+  const label = document.getElementById('file-sync-label');
   if (!btn) return;
   if (_savesFileHandle) {
     btn.title = 'Saves linked to file on your computer — click to unlink';
     btn.classList.add('file-sync-active');
-    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> Saved to file`;
+    if (label) label.textContent = 'Unlink save file';
   } else {
     btn.title = 'Link a file so saves persist beyond cache clears';
     btn.classList.remove('file-sync-active');
-    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> Link file`;
+    if (label) label.textContent = 'Link save file…';
   }
 }
 
@@ -1869,6 +1870,15 @@ function closeCollabModal() { document.getElementById('collab-modal').classList.
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // File dropdown toggle
+  const fileDropdownMenu = document.getElementById('file-dropdown-menu');
+  document.getElementById('btn-file-menu').addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileDropdownMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', () => fileDropdownMenu.classList.remove('open'));
+  fileDropdownMenu.addEventListener('click', () => fileDropdownMenu.classList.remove('open'));
+
   document.getElementById('btn-saved').addEventListener('click', openSavedModal);
   document.getElementById('btn-save').addEventListener('click', savePromptAs);
   document.getElementById('btn-save-copy').addEventListener('click', saveAsCopy);
